@@ -342,3 +342,23 @@ class Tablero:
             )
 
         return True
+
+
+    def fichas_jugadas(self):
+
+        jugadas = []
+
+        for casilla in self.casillas:
+
+            if casilla.ficha is not None:
+
+                jugadas.append(
+                    (
+                        casilla.numero,
+                        casilla.ficha,
+                        casilla.celda1.numero,
+                        casilla.celda2.numero
+                    )
+                )
+
+        return jugadas
