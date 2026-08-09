@@ -1,0 +1,19 @@
+Creo que la clase head debería tener estos atributos:
+- número: la fracción que hay que matchear
+- celda: la celda que ocupa el head, digamos n
+- siguiente_celda: la celda que hay que ocupar con la siguiente ficha, que sería n+1 (mod 60)
+- casilla: la celda que ocupa el head, digamos k
+- siguiente_casilla: la casilla que debería ocupar la siguiente ficha, que sería k+1 (mod 30)
+- orientacion_siguiente: la orientación necesaria de la siguiente ficha (esto está en un diccionario)
+
+Todo similar para la clase tail.
+
+Al intentar jugar una ficha F en la casilla C, habría que chequear lo siguiente:
+- en primer lugar si jugó en una de las dos casillas posibles: si C==head.siguiente_casilla o C==tail.siguiente_casilla
+[Escribo las siguientes condiciones para el caso en que coincide head]
+- chequea la orientación de la ficha: si F.orientacion==head.orientacion_siguiente
+- Supongamos que el D es diccionario de casillas, celdas: D[C] devuelve la tupla (a,b). Supongamos por el momento que la celda era horizontal. Se hace la asignación temporal, en un diccionario temporal:
+dicctemp[a] = ficha.izquierda
+dicctemp[b] = ficha.derecha 
+Hay que verificar que
+dicctemp[head.siguiente_celda] = head.numero
