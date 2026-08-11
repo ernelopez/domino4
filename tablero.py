@@ -239,50 +239,89 @@ class Tablero:
 
     def puede_colocar(self, ficha, casilla):
 
-        resu = False
-        #print(casilla.numero,self.head_posible.casilla.numero)
-        #print(ficha.orientacion,self.head_posible.orientacion)
+        # -------------------------------------------------
+        # Chequeo si coincide con head_posible
+        # -------------------------------------------------
 
-        #Chequeo si coincide con head_posible
-        if casilla.numero == self.head_posible.casilla.numero and ficha.orientacion == self.head_posible.orientacion : 
-            hv , hp = self.head_posible.valor , self.head_posible.posicion
+        if (
+            casilla.numero == self.head_posible.casilla.numero
+            and
+            ficha.orientacion == self.head_posible.orientacion
+        ):
+
+            hv = self.head_posible.valor
+            hp = self.head_posible.posicion
+
             fv = ficha.valores[hp]
-            #print(hv,hp,fv)
-            if hv==fv :
+
+            if hv == fv:
+
                 print("Eureka head")
-                resu = True
-        elif casilla.numero == self.tail_posible.casilla.numero and ficha.orientacion == self.tail_posible.orientacion : 
-            tv , tp = self.tail_posible.valor , self.tail_posible.posicion
+
+                return self.head_posible, "head"
+
+
+        # -------------------------------------------------
+        # Chequeo si coincide con tail_posible
+        # -------------------------------------------------
+
+        if (
+            casilla.numero == self.tail_posible.casilla.numero
+            and
+            ficha.orientacion == self.tail_posible.orientacion
+        ):
+
+            tv = self.tail_posible.valor
+            tp = self.tail_posible.posicion
+
             fv = ficha.valores[tp]
-            if tv==fv :
+
+            if tv == fv:
+
                 print("Eureka tail")
-                resu = True
-        
-        return resu
+
+                return self.tail_posible, "tail"
+
+
+        # -------------------------------------------------
+        # No se puede colocar
+        # -------------------------------------------------
+
+        return None, None
 
 
 
     def colocar_ficha(self, ficha, casilla):
 
-        # Primero verificamos que la jugada sea válida
-        if not self.puede_jugar(ficha, casilla):
+        # -------------------------------------------------
+        # 1. Verificar que la jugada sea válida
+        # -------------------------------------------------
+
+        if not self.puede_colocar(ficha, casilla):
             return False
 
+
         # -------------------------------------------------
-        # Identificar por qué extremo se está jugando
+        # 2. Determinar qué posición posible se está usando
         # -------------------------------------------------
 
-        if casilla.numero == self.head.siguiente_casilla(self).numero:
+        if casilla.numero == self.head_posible.casilla.numero:
 
-            extremo = self.head
+            posicion = self.head_posible
+            extremo = "head"
+
+        elif casilla.numero == self.tail_posible.casilla.numero:
+
+            posicion = self.tail_posible
+            extremo = "tail"
 
         else:
 
-            extremo = self.tail
+            return False
 
 
         # -------------------------------------------------
-        # Colocar la ficha en la casilla
+        # 3. Colocar la ficha
         # -------------------------------------------------
 
         casilla.ficha = ficha
@@ -291,37 +330,78 @@ class Tablero:
 
 
         # -------------------------------------------------
-        # Determinar qué valor ocupa cada celda
+        # 4. Copiar los valores de la ficha a las celdas
         # -------------------------------------------------
 
-        if casilla.sentido == 1:
+        if casilla.orientacion == "horizontal":
 
-            casilla.celda1.valor = ficha.valor1
-            casilla.celda2.valor = ficha.valor2
+            casilla.celda1.valor = ficha.valores["O"]
+            casilla.celda2.valor = ficha.valores["E"]
 
         else:
 
-            casilla.celda1.valor = ficha.valor2
-            casilla.celda2.valor = ficha.valor1
+            casilla.celda1.valor = ficha.valores["N"]
+            casilla.celda2.valor = ficha.valores["S"]
 
 
         # -------------------------------------------------
-        # Actualizar el extremo correspondiente
+        # 5. Actualizar la posición posible correspondiente
         # -------------------------------------------------
 
-        if extremo is self.head:
+        if extremo == "tail":
 
-            self.head.inicializar(
-                casilla,
-                casilla.celda2
+            nueva_casilla = self.casillas[
+                (casilla.numero - 1) % 30
+            ]
+
+            nueva_celda = self.celdas[
+                nueva_casilla.numero * 2 + 1
+            ]
+
+            # El valor que necesita la nueva posición
+            # es el extremo exterior de la ficha.
+            if nueva_casilla.orientacion == "horizontal":
+
+                valor = ficha.valores["O"]
+
+            else:
+
+                valor = ficha.valores["S"]
+
+
+            self.tail_posible.inicializar(
+                nueva_casilla,
+                nueva_celda,
+                nueva_casilla.orientacion,
+                valor
             )
 
         else:
 
-            self.tail.inicializar(
-                casilla,
-                casilla.celda1
+            nueva_casilla = self.casillas[
+                (casilla.numero + 1) % 30
+            ]
+
+            nueva_celda = self.celdas[
+                nueva_casilla.numero * 2
+            ]
+
+            if nueva_casilla.orientacion == "horizontal":
+
+                valor = ficha.valores["E"]
+
+            else:
+
+                valor = ficha.valores["N"]
+
+
+            self.head_posible.inicializar(
+                nueva_casilla,
+                nueva_celda,
+                nueva_casilla.orientacion,
+                valor
             )
+
 
         return True
 
