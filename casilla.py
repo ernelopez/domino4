@@ -23,8 +23,12 @@ class Casilla:
         self.y = y
 
         #celda1 será O ó N; celda2 será E ó S
-        self.celda1 = Celda(celda1)
-        self.celda2 = Celda(celda2)
+        if sentido==1 :
+            self.celda1 = Celda(celda1)
+            self.celda2 = Celda(celda2)
+        else :
+            self.celda1 = Celda(celda2)
+            self.celda2 = Celda(celda1)
 
         self.celda1.casilla = self
         self.celda2.casilla = self
