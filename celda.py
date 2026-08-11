@@ -9,3 +9,10 @@ class Celda:
         # Centro de la celda en pantalla
         self.x = 0
         self.y = 0
+
+    def mostrar(self):
+        print(
+            f"Celda {self.numero}: "
+            f"x={self.x}, y={self.y}, "
+            f"valor={self.valor}"
+        )

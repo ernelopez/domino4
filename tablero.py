@@ -1,6 +1,6 @@
 from casilla import Casilla
-from extremos import Head, Tail
 from config import LARGO_FICHA, ANCHO_FICHA, MARGEN_TABLERO
+from posicion_posible import PosicionPosible
 
 
 class Tablero:
@@ -10,10 +10,12 @@ class Tablero:
         self.casillas = []
         self.celdas = [None] * 60
 
-        self.head = Head()
-        self.tail = Tail()
+        self.head_posible = PosicionPosible()
+        self.tail_posible = PosicionPosible()
 
         self.crear_casillas()
+
+        self.primera_jugada = True
 
 
     def agregar_casilla(self, casilla):
@@ -131,34 +133,81 @@ class Tablero:
 
 
 
-    def colocar_primera_ficha(self, ficha):
+    def colocar_primera_ficha(self, ficha, casilla):
 
-        # La primera ficha siempre va en la casilla 3
-        casilla = self.casillas[3]
+        # La orientación de la ficha debe coincidir
+        # con la orientación de la casilla.
+        if ficha.orientacion != casilla.orientacion:
+            print("MAL")
+            return False
 
-        # La casilla queda ocupada
+        # -------------------------------------------------
+        # Colocar la ficha
+        # -------------------------------------------------
+
         casilla.ficha = ficha
-
-        # La ficha sabe dónde está
         ficha.casilla = casilla
+        ficha.estado = "tablero"
 
-        # Guardamos los valores de la ficha en las celdas
-        casilla.celda1.valor = ficha.valor1
-        casilla.celda2.valor = ficha.valor2
 
-        # El tail queda en la celda de entrada
-        # del recorrido de la casilla 3
-        self.tail.inicializar(
-            casilla,
-            casilla.celda_entrada()
-        )
+        # -------------------------------------------------
+        # Guardar los valores de la ficha en las celdas
+        # -------------------------------------------------
 
-        # El head queda en la celda de salida
-        # del recorrido de la casilla 3
-        self.head.inicializar(
-            casilla,
-            casilla.celda_salida()
-        )
+        if casilla.orientacion == "horizontal":
+
+            casilla.celda1.valor = ficha.valores["O"]
+            casilla.celda2.valor = ficha.valores["E"]
+
+        else:
+
+            casilla.celda1.valor = ficha.valores["N"]
+            casilla.celda2.valor = ficha.valores["S"]
+
+
+        # -------------------------------------------------
+        # Crear posición posible para TAIL
+        # -------------------------------------------------
+
+        casilla_tail = self.casillas[
+            (casilla.numero - 1) % 30 ]
+        celda_tail = self.celdas[casilla_tail.numero*2+1]
+        if casilla.numero < 7 :
+            valor_tail = ficha.valores["O"]
+        elif casilla.numero < 15 :
+            valor_tail = ficha.valores["N"]
+        elif casilla.numero < 22 :
+            valor_tail = ficha.valores["E"]
+        else :
+            valor_tail = ficha.valores["S"]
+
+        self.tail_posible.inicializar(casilla_tail,
+                                      celda_tail,
+                                      casilla_tail.orientacion,
+                                      valor_tail)
+
+        # -------------------------------------------------
+        # Crear posición posible para HEAD
+        # -------------------------------------------------
+
+        casilla_head = self.casillas[
+            (casilla.numero + 1) % 30 ]
+
+        celda_head = self.celdas[casilla_head.numero*2]
+        if casilla.numero < 7 :
+            valor_head = ficha.valores["E"]
+        elif casilla.numero < 15 :
+            valor_head = ficha.valores["S"]
+        elif casilla.numero < 22 :
+            valor_head = ficha.valores["O"]
+        else :
+            valor_head = ficha.valores["N"]
+
+        self.head_posible.inicializar(casilla_head,
+                                      celda_head,
+                                      casilla_head.orientacion,
+                                      valor_head)
+        return True
 
 
     def mostrar_casillas(self):
@@ -188,96 +237,29 @@ class Tablero:
             )
 
 
-    def probar_extremos(self):
+    def puede_colocar(self, ficha, casilla):
 
-        print("\n=== EXTREMOS ===")
+        resu = False
+        #print(casilla.numero,self.head_posible.casilla.numero)
+        #print(ficha.orientacion,self.head_posible.orientacion)
 
-        self.head.mostrar()
+        #Chequeo si coincide con head_posible
+        if casilla.numero == self.head_posible.casilla.numero and ficha.orientacion == self.head_posible.orientacion : 
+            hv , hp = self.head_posible.valor , self.head_posible.posicion
+            fv = ficha.valores[hp]
+            #print(hv,hp,fv)
+            if hv==fv :
+                print("Eureka head")
+                resu = True
+        elif casilla.numero == self.tail_posible.casilla.numero and ficha.orientacion == self.tail_posible.orientacion : 
+            tv , tp = self.tail_posible.valor , self.tail_posible.posicion
+            fv = ficha.valores[tp]
+            if tv==fv :
+                print("Eureka tail")
+                resu = True
+        
+        return resu
 
-        siguiente = self.head.siguiente_casilla(self)
-
-        print("siguiente casilla :", siguiente.numero)
-        print("siguiente celda   :", self.head.siguiente_celda(self).numero)
-
-        self.tail.mostrar()
-
-        siguiente = self.tail.siguiente_casilla(self)
-
-        print("siguiente casilla :", siguiente.numero)
-        print("siguiente celda   :", self.tail.siguiente_celda(self).numero)
-
-
-
-    def puede_jugar(self, ficha, casilla):
-
-        # -------------------------------------------------
-        # 1. La casilla tiene que ser una de las dos
-        #    casillas siguientes a los extremos
-        # -------------------------------------------------
-
-        casilla_head = self.head.siguiente_casilla(self)
-        casilla_tail = self.tail.siguiente_casilla(self)
-
-        if casilla.numero == casilla_head.numero:
-
-            extremo = self.head
-
-        elif casilla.numero == casilla_tail.numero:
-
-            extremo = self.tail
-
-        else:
-
-            return False
-
-
-        # -------------------------------------------------
-        # 2. La orientación de la ficha debe coincidir
-        #    con la orientación de la casilla
-        # -------------------------------------------------
-
-        if ficha.orientacion != casilla.orientacion:
-
-            return False
-
-
-        # -------------------------------------------------
-        # 3. Identificamos la celda de la casilla que
-        #    debe coincidir con el extremo
-        # -------------------------------------------------
-
-        celda_conexion = extremo.siguiente_celda(self)
-
-
-        # -------------------------------------------------
-        # 4. Construimos temporalmente cómo quedarían
-        #    las dos celdas de la casilla
-        # -------------------------------------------------
-
-        if casilla.sentido == 1:
-
-            valor_celda1 = ficha.valor1
-            valor_celda2 = ficha.valor2
-
-        else:
-
-            valor_celda1 = ficha.valor2
-            valor_celda2 = ficha.valor1
-
-
-        # -------------------------------------------------
-        # 5. Comprobamos la celda de conexión
-        # -------------------------------------------------
-
-        if celda_conexion == casilla.celda1:
-
-            return valor_celda1 == extremo.numero
-
-        elif celda_conexion == casilla.celda2:
-
-            return valor_celda2 == extremo.numero
-
-        return False
 
 
     def colocar_ficha(self, ficha, casilla):
@@ -331,14 +313,14 @@ class Tablero:
 
             self.head.inicializar(
                 casilla,
-                casilla.celda_salida()
+                casilla.celda2
             )
 
         else:
 
             self.tail.inicializar(
                 casilla,
-                casilla.celda_entrada()
+                casilla.celda1
             )
 
         return True

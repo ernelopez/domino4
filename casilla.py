@@ -22,6 +22,7 @@ class Casilla:
         self.x = x
         self.y = y
 
+        #celda1 será O ó N; celda2 será E ó S
         self.celda1 = Celda(celda1)
         self.celda2 = Celda(celda2)
 
@@ -54,22 +55,6 @@ class Casilla:
         if self.sentido == -1:
             self.celda1.x, self.celda2.x = self.celda2.x, self.celda1.x
             self.celda1.y, self.celda2.y = self.celda2.y, self.celda1.y
-
-
-    def celda_entrada(self):
-
-        if self.sentido == 1:
-            return self.celda1
-        else:
-            return self.celda2
-
-
-    def celda_salida(self):
-
-        if self.sentido == 1:
-            return self.celda2
-        else:
-            return self.celda1
 
 
     def casilla_siguiente_head(self, tablero):
