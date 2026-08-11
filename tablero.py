@@ -16,6 +16,7 @@ class Tablero:
         self.crear_casillas()
 
         self.primera_jugada = True
+        self.fichas_jugadas = []
 
 
     def agregar_casilla(self, casilla):
@@ -207,6 +208,10 @@ class Tablero:
                                       celda_head,
                                      # casilla_head.orientacion,
                                       valor_head)
+        
+        #Guardar la jugada en fichas_jugadas
+        self.fichas_jugadas.append((ficha, casilla))
+
         return True
 
 
@@ -310,27 +315,6 @@ class Tablero:
             else :
                 nuevo_valor = ficha.valores["E"]
 
-
-        # -------------------------------------------------
-        # 2. Determinar qué posición posible se está usando
-        # -------------------------------------------------
-
-        '''
-        if casilla.numero == self.head_posible.casilla.numero:
-
-            posicion = self.head_posible
-            extremo = "head"
-
-        elif casilla.numero == self.tail_posible.casilla.numero:
-
-            posicion = self.tail_posible
-            extremo = "tail"
-
-        else:
-
-            return False
-        '''
-
         # -------------------------------------------------
         # 3. Colocar la ficha
         # -------------------------------------------------
@@ -391,6 +375,7 @@ class Tablero:
                 nuevo_valor
             )
 
+        self.fichas_jugadas.append((ficha, casilla))
 
         return True
 
