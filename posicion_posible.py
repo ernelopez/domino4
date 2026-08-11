@@ -20,13 +20,14 @@ class PosicionPosible:
         self.posicion = None
 
 
-    def inicializar(self, casilla, celda, direccion, valor):
+    def inicializar(self, casilla, celda, valor):
 
+        direccion = casilla.orientacion
         self.casilla = casilla
         self.celda = celda
-        self.direccion = direccion
+        #self.direccion = direccion
         self.valor = valor
-        self.orientacion = casilla.orientacion
+        self.orientacion = direccion
         
         if direccion == "horizontal" and celda.numero in [0,2,4,6,8,10,12] :
             self.posicion = "O"

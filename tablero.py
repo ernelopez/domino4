@@ -183,7 +183,7 @@ class Tablero:
 
         self.tail_posible.inicializar(casilla_tail,
                                       celda_tail,
-                                      casilla_tail.orientacion,
+                                      #casilla_tail.orientacion,
                                       valor_tail)
 
         # -------------------------------------------------
@@ -205,7 +205,7 @@ class Tablero:
 
         self.head_posible.inicializar(casilla_head,
                                       celda_head,
-                                      casilla_head.orientacion,
+                                     # casilla_head.orientacion,
                                       valor_head)
         return True
 
@@ -293,18 +293,29 @@ class Tablero:
 
     def colocar_ficha(self, ficha, casilla):
 
+        posible , extremo = self.puede_colocar(ficha, casilla)
         # -------------------------------------------------
         # 1. Verificar que la jugada sea válida
         # -------------------------------------------------
 
-        if not self.puede_colocar(ficha, casilla):
+        if not posible:
             return False
+        else :
+            if posible.posicion == "N" :
+                nuevo_valor = ficha.valores["S"]
+            elif posible.posicion == "S" :
+                nuevo_valor = ficha.valores["N"]
+            elif posible.posicion == "E" :
+                nuevo_valor = ficha.valores["O"]
+            else :
+                nuevo_valor = ficha.valores["E"]
 
 
         # -------------------------------------------------
         # 2. Determinar qué posición posible se está usando
         # -------------------------------------------------
 
+        '''
         if casilla.numero == self.head_posible.casilla.numero:
 
             posicion = self.head_posible
@@ -318,7 +329,7 @@ class Tablero:
         else:
 
             return False
-
+        '''
 
         # -------------------------------------------------
         # 3. Colocar la ficha
@@ -358,22 +369,10 @@ class Tablero:
                 nueva_casilla.numero * 2 + 1
             ]
 
-            # El valor que necesita la nueva posición
-            # es el extremo exterior de la ficha.
-            if nueva_casilla.orientacion == "horizontal":
-
-                valor = ficha.valores["O"]
-
-            else:
-
-                valor = ficha.valores["S"]
-
-
             self.tail_posible.inicializar(
                 nueva_casilla,
                 nueva_celda,
-                nueva_casilla.orientacion,
-                valor
+                nuevo_valor
             )
 
         else:
@@ -386,24 +385,15 @@ class Tablero:
                 nueva_casilla.numero * 2
             ]
 
-            if nueva_casilla.orientacion == "horizontal":
-
-                valor = ficha.valores["E"]
-
-            else:
-
-                valor = ficha.valores["N"]
-
-
             self.head_posible.inicializar(
                 nueva_casilla,
                 nueva_celda,
-                nueva_casilla.orientacion,
-                valor
+                nuevo_valor
             )
 
 
         return True
+
 
 
     def fichas_jugadas(self):
