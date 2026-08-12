@@ -1,5 +1,5 @@
 from celda import Celda
-
+from config import CANT_CASILLAS, CANT_CASILLAS_TOP
 
 class Casilla:
 
@@ -40,20 +40,32 @@ class Casilla:
                                    ancho_ficha):
 
         if self.orientacion == "horizontal":
+            if self.sentido==1 :
+                self.celda1.x = self.x + ancho_ficha / 2
+                self.celda1.y = self.y + ancho_ficha / 2
 
-            self.celda1.x = self.x + ancho_ficha / 2
-            self.celda1.y = self.y + ancho_ficha / 2
+                self.celda2.x = self.x + largo_ficha - ancho_ficha / 2
+                self.celda2.y = self.y + ancho_ficha / 2
+            else :
+                self.celda2.x = self.x + ancho_ficha / 2
+                self.celda2.y = self.y + ancho_ficha / 2
 
-            self.celda2.x = self.x + largo_ficha - ancho_ficha / 2
-            self.celda2.y = self.y + ancho_ficha / 2
+                self.celda1.x = self.x + largo_ficha - ancho_ficha / 2
+                self.celda1.y = self.y + ancho_ficha / 2
 
         else:
+            if self.sentido==1 :
+                self.celda1.x = self.x + ancho_ficha / 2
+                self.celda1.y = self.y + ancho_ficha / 2
 
-            self.celda1.x = self.x + ancho_ficha / 2
-            self.celda1.y = self.y + ancho_ficha / 2
+                self.celda2.x = self.x + ancho_ficha / 2
+                self.celda2.y = self.y + largo_ficha - ancho_ficha / 2
+            else :
+                self.celda2.x = self.x + ancho_ficha / 2
+                self.celda2.y = self.y + ancho_ficha / 2
 
-            self.celda2.x = self.x + ancho_ficha / 2
-            self.celda2.y = self.y + largo_ficha - ancho_ficha / 2
+                self.celda1.x = self.x + ancho_ficha / 2
+                self.celda1.y = self.y + largo_ficha - ancho_ficha / 2
 
         #Parche para trocar los centros de las de abajo y a la izquierda
         if self.sentido == -1:
@@ -63,9 +75,9 @@ class Casilla:
 
     def casilla_siguiente_head(self, tablero):
 
-        return tablero.casillas[(self.numero + 1) % 30]
+        return tablero.casillas[(self.numero + 1) % CANT_CASILLAS]
 
 
     def casilla_siguiente_tail(self, tablero):
 
-        return tablero.casillas[(self.numero - 1) % 30]
+        return tablero.casillas[(self.numero - 1) % CANT_CASILLAS]

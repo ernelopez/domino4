@@ -4,7 +4,7 @@ from posicion_posible import PosicionPosible
 
 tablero = Tablero()
 #tablero.mostrar_casillas()
-#tablero.mostrar_celdas()
+tablero.mostrar_celdas()
 
 f1 = Ficha((1, 7), (2, 7))
 f2 = Ficha((2, 7), (3, 7))

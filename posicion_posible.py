@@ -1,3 +1,18 @@
+from config import CANT_CASILLAS, CANT_CASILLAS_TOP
+
+CANT_CELDAS = 2*CANT_CASILLAS
+CANT_CASILLAS_LAT = CANT_CASILLAS//2-CANT_CASILLAS_TOP
+
+CASILLAS_TOP = list(range(CANT_CASILLAS_TOP))
+CASILLAS_RIG = list(range(CANT_CASILLAS_TOP,CANT_CASILLAS_TOP+CANT_CASILLAS_LAT))
+CASILLAS_DOW = [i+CANT_CASILLAS//2 for i in CASILLAS_TOP]
+CASILLAS_LEF = [i+CANT_CASILLAS//2 for i in CASILLAS_RIG]
+
+CELDAS_TOP = [x*2 + i for x in CASILLAS_TOP for i in (0, 1)]
+CELDAS_RIG = [x*2 + i for x in CASILLAS_RIG for i in (0, 1)]
+CELDAS_DOW = [x*2 + i for x in CASILLAS_DOW for i in (0, 1)]
+CELDAS_LEF = [x*2 + i for x in CASILLAS_LEF for i in (0, 1)]
+
 class PosicionPosible:
 
     def __init__(self):
@@ -29,21 +44,21 @@ class PosicionPosible:
         self.valor = valor
         self.orientacion = direccion
         
-        if direccion == "horizontal" and celda.numero in [0,2,4,6,8,10,12] :
+        if direccion == "horizontal" and celda.numero in CELDAS_TOP and celda.numero%2==0 :
             self.posicion = "O"
-        elif direccion == "horizontal" and celda.numero in [1,3,5,7,9,11,13] :
+        elif direccion == "horizontal" and celda.numero in CELDAS_TOP and celda.numero%2==1 :
             self.posicion = "E"
-        elif direccion == "vertical" and celda.numero in [14,16,18,20,22,24,26,28] :
+        elif direccion == "vertical" and celda.numero in CELDAS_RIG and celda.numero%2==0 :
             self.posicion = "N"
-        elif direccion == "vertical" and celda.numero in [15,17,19,21,23,25,27,29] :
+        elif direccion == "vertical" and celda.numero in CELDAS_RIG and celda.numero%2==1 :
             self.posicion = "S"
-        elif direccion == "horizontal" and celda.numero in [30,32,34,36,38,40,42] :
+        elif direccion == "horizontal" and celda.numero in CELDAS_DOW and celda.numero%2==0 :
             self.posicion = "E"
-        elif direccion == "horizontal" and celda.numero in [31,33,35,37,39,41,43] :
+        elif direccion == "horizontal" and celda.numero in CELDAS_DOW and celda.numero%2==1 :
             self.posicion = "O"
-        elif direccion == "vertical" and celda.numero in [44,46,48,50,52,54,56,58] :
+        elif direccion == "vertical" and celda.numero in CELDAS_LEF and celda.numero%2==0 :
             self.posicion = "S"
-        elif direccion == "vertical" and celda.numero in [45,47,49,51,53,55,57,59] :
+        elif direccion == "vertical" and celda.numero in CELDAS_LEF and celda.numero%2==1 :
             self.posicion = "N"
 
 

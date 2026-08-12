@@ -1,14 +1,16 @@
 from casilla import Casilla
-from config import LARGO_FICHA, ANCHO_FICHA, MARGEN_TABLERO
+from config import LARGO_FICHA, ANCHO_FICHA, MARGEN_TABLERO, CANT_CASILLAS, CANT_CASILLAS_TOP
 from posicion_posible import PosicionPosible
 
+CANT_CELDAS = 2*CANT_CASILLAS
+CANT_CASILLAS_LAT = CANT_CASILLAS//2-CANT_CASILLAS_TOP
 
 class Tablero:
 
     def __init__(self):
 
         self.casillas = []
-        self.celdas = [None] * 60
+        self.celdas = [None] * CANT_CELDAS
 
         self.head_posible = PosicionPosible()
         self.tail_posible = PosicionPosible()
@@ -43,7 +45,7 @@ class Tablero:
         x = MARGEN_TABLERO + ANCHO_FICHA
         y = MARGEN_TABLERO
 
-        for _ in range(7):
+        for _ in range(CANT_CASILLAS_TOP):
 
             casilla = Casilla(
                 numero,
@@ -64,10 +66,10 @@ class Tablero:
         # Derecha
         # -------------------------
 
-        x = MARGEN_TABLERO + 8 * LARGO_FICHA - ANCHO_FICHA
+        x = MARGEN_TABLERO + ANCHO_FICHA + CANT_CASILLAS_TOP * LARGO_FICHA
         y = MARGEN_TABLERO
 
-        for _ in range(8):
+        for _ in range(CANT_CASILLAS_LAT):
 
             casilla = Casilla(
                 numero,
@@ -88,11 +90,10 @@ class Tablero:
         # Inferior
         # -------------------------
 
-        #x = MARGEN_TABLERO + 7 * LARGO_FICHA
-        x = MARGEN_TABLERO - ANCHO_FICHA + 7 * LARGO_FICHA #Corrección
-        y = MARGEN_TABLERO + 8 * LARGO_FICHA - ANCHO_FICHA
+        x = MARGEN_TABLERO + ANCHO_FICHA + CANT_CASILLAS_TOP * LARGO_FICHA  - LARGO_FICHA
+        y = MARGEN_TABLERO + CANT_CASILLAS_LAT * LARGO_FICHA - ANCHO_FICHA
 
-        for _ in range(7):
+        for _ in range(CANT_CASILLAS_TOP):
 
             casilla = Casilla(
                 numero,
@@ -114,9 +115,9 @@ class Tablero:
         # -------------------------
 
         x = MARGEN_TABLERO
-        y = MARGEN_TABLERO + 7 * LARGO_FICHA
+        y = MARGEN_TABLERO + (CANT_CASILLAS_LAT-1) * LARGO_FICHA
 
-        for _ in range(8):
+        for _ in range(CANT_CASILLAS_LAT):
 
             casilla = Casilla(
                 numero,
@@ -171,13 +172,13 @@ class Tablero:
         # -------------------------------------------------
 
         casilla_tail = self.casillas[
-            (casilla.numero - 1) % 30 ]
+            (casilla.numero - 1) % CANT_CASILLAS ]
         celda_tail = self.celdas[casilla_tail.numero*2+1]
-        if casilla.numero < 7 :
+        if casilla.numero < CANT_CASILLAS_TOP :
             valor_tail = ficha.valores["O"]
-        elif casilla.numero < 15 :
+        elif casilla.numero < CANT_CASILLAS_TOP+CANT_CASILLAS_LAT :
             valor_tail = ficha.valores["N"]
-        elif casilla.numero < 22 :
+        elif casilla.numero < CANT_CASILLAS_TOP+CANT_CASILLAS_LAT+CANT_CASILLAS_TOP :
             valor_tail = ficha.valores["E"]
         else :
             valor_tail = ficha.valores["S"]
@@ -192,14 +193,14 @@ class Tablero:
         # -------------------------------------------------
 
         casilla_head = self.casillas[
-            (casilla.numero + 1) % 30 ]
+            (casilla.numero + 1) % CANT_CASILLAS ]
 
         celda_head = self.celdas[casilla_head.numero*2]
-        if casilla.numero < 7 :
+        if casilla.numero < CANT_CASILLAS_TOP :
             valor_head = ficha.valores["E"]
-        elif casilla.numero < 15 :
+        elif casilla.numero < CANT_CASILLAS_TOP+CANT_CASILLAS_LAT :
             valor_head = ficha.valores["S"]
-        elif casilla.numero < 22 :
+        elif casilla.numero < CANT_CASILLAS_TOP+CANT_CASILLAS_LAT+CANT_CASILLAS_TOP :
             valor_head = ficha.valores["O"]
         else :
             valor_head = ficha.valores["N"]
@@ -261,8 +262,7 @@ class Tablero:
 
             if hv == fv:
 
-                print("Eureka head")
-
+                #print("Eureka head")
                 return self.head_posible, "head"
 
 
@@ -283,8 +283,7 @@ class Tablero:
 
             if tv == fv:
 
-                print("Eureka tail")
-
+                #print("Eureka tail")
                 return self.tail_posible, "tail"
 
 
@@ -346,7 +345,7 @@ class Tablero:
         if extremo == "tail":
 
             nueva_casilla = self.casillas[
-                (casilla.numero - 1) % 30
+                (casilla.numero - 1) % CANT_CASILLAS
             ]
 
             nueva_celda = self.celdas[
@@ -362,7 +361,7 @@ class Tablero:
         else:
 
             nueva_casilla = self.casillas[
-                (casilla.numero + 1) % 30
+                (casilla.numero + 1) % CANT_CASILLAS
             ]
 
             nueva_celda = self.celdas[
