@@ -212,6 +212,7 @@ class Tablero:
         
         #Guardar la jugada en fichas_jugadas
         self.fichas_jugadas.append((ficha, casilla))
+        self.primera_jugada = False
 
         return True
 

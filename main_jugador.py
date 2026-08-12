@@ -17,3 +17,4 @@ jugador1.mostrar_fichas()
 jugador2.mostrar_fichas()
 
 print("\nFichas en el pozo:", pozo.cantidad())
+
