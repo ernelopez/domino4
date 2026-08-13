@@ -69,3 +69,49 @@ class Partida:
                             return True
 
         return False
+
+
+
+    def levantar_ficha(self, jugador):
+        ficha = self.pozo.sacar()
+
+        if ficha is None:
+            return False
+
+        jugador.recibir_ficha(ficha)
+        return True
+
+
+    def cambiar_turno(self):
+        self.turno = (self.turno + 1) % len(self.jugadores)
+
+
+    def comprobar_derrota(self):
+
+        jugador = self.jugador_actual()
+
+        if jugador.cantidad_fichas() == 0:
+            return False
+
+        if self.pozo.cantidad() == 0 and not self.puede_jugar(jugador):
+            return True
+
+        return False
+
+
+    def jugador_perdio(self):
+
+        jugador = self.jugador_actual()
+
+        return (
+            self.pozo.cantidad() == 0
+            and
+            not self.puede_jugar(jugador)
+        )
+
+
+    def jugador_gano(self):
+
+        jugador = self.jugador_actual()
+
+        return jugador.cantidad_fichas() == 0
