@@ -134,6 +134,20 @@ with col2:
                 agregar_mensaje(f"⏭️ {jugador.nombre} pasa turno", "warning")
                 partida.cambiar_turno()
                 st.rerun()
+            
+            # Mostrar extremos DEBAJO del botón de pasar turno
+            st.divider()
+            st.subheader("🔢 Extremos")
+            
+            if not partida.tablero.primera_jugada:
+                # TAIL a la izquierda, HEAD a la derecha
+                col_tail, col_head = st.columns(2)
+                with col_tail:
+                    st.metric("⬅️ TAIL", partida.tablero.tail_posible.texto())
+                with col_head:
+                    st.metric("HEAD ➡️", partida.tablero.head_posible.texto())
+            else:
+                st.info("🎯 Primera jugada - coloca donde quieras")
         
         else:
             # Partida terminada
@@ -148,12 +162,3 @@ with col2:
                 "Pozo": partida.pozo.cantidad(),
                 "Fichas jugadas": len(partida.tablero.fichas_jugadas)
             })
-
-# Mostrar extremos
-if 'partida' in st.session_state and not st.session_state.partida.tablero.primera_jugada:
-    st.divider()
-    col_head, col_tail = st.columns(2)
-    with col_head:
-        st.metric("HEAD", st.session_state.partida.tablero.head_posible.texto())
-    with col_tail:
-        st.metric("TAIL", st.session_state.partida.tablero.tail_posible.texto())
