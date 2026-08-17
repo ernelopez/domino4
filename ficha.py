@@ -113,3 +113,18 @@ class Ficha:
             f"N:{self.textos["N"]}",
             f"S:{self.textos["S"]}"
         )
+
+    # Agregados por DeepSeek
+    def mostrar_valores(self):
+        """Devuelve una representación legible de la ficha con las fracciones originales"""
+        if self.orientacion == "horizontal":
+            return f"[{self.textos['O']} | {self.textos['E']}]"
+        else:
+            return f"[{self.textos['N']} | {self.textos['S']}]"
+
+    def __str__(self):
+        """Representación en string de la ficha"""
+        return self.mostrar_valores()
+
+    def __repr__(self):
+        return self.mostrar_valores()

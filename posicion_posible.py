@@ -68,3 +68,7 @@ class PosicionPosible:
         print(f"Debe haber  : {self.valor}")
         print(f"Orientación : {self.orientacion}")
         print(f"Posición    : {self.posicion}")
+
+    def texto(self):
+        """Devuelve el valor como fracción legible"""
+        return f"{self.valor}"  # O usa el formato que prefieras
