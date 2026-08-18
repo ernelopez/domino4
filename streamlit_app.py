@@ -62,7 +62,50 @@ with col2:
         if not partida.terminada:
             jugador = partida.jugador_actual()
             
-            # Mostrar fichas del jugador
+            # Verificar si el jugador puede jugar
+            puede_jugar = partida.puede_jugar(jugador)
+            
+            # Si NO puede jugar, mostrar opción de robar (pero pasar siempre disponible)
+            if not puede_jugar:
+                st.warning(f"⛔ {jugador.nombre} no puede jugar con sus fichas actuales.")
+                
+                if partida.pozo.cantidad() > 0:
+                    if st.button("📥 Robar del pozo", type="primary"):
+                        ficha = partida.levantar_ficha(jugador)
+                        if ficha:
+                            agregar_mensaje(f"📥 {jugador.nombre} robó: {ficha.mostrar_valores()}", "info")
+                            # Verificar si ahora puede jugar
+                            if partida.puede_jugar(jugador):
+                                agregar_mensaje(f"✅ ¡Ahora puedes jugar!", "success")
+                            else:
+                                agregar_mensaje(f"❌ Sigues sin poder jugar.", "warning")
+                            st.rerun()
+                else:
+                    st.error("📭 Pozo vacío.")
+            
+            # Botón para pasar turno SIEMPRE disponible
+            if st.button("⏭️ Pasar turno", type="secondary"):
+                agregar_mensaje(f"⏭️ {jugador.nombre} pasa turno", "warning")
+                partida.cambiar_turno()
+                st.rerun()
+            
+            # Si NO puede jugar, no mostrar el resto (fichas, colocar, etc.)
+            if not puede_jugar:
+                # Mostrar extremos
+                st.divider()
+                st.subheader("🔢 Extremos")
+                if not partida.tablero.primera_jugada:
+                    col_tail, col_head = st.columns(2)
+                    with col_tail:
+                        st.metric("⬅️ TAIL", partida.tablero.tail_posible.texto())
+                    with col_head:
+                        st.metric("HEAD ➡️", partida.tablero.head_posible.texto())
+                else:
+                    st.info("🎯 Primera jugada - coloca donde quieras")
+                
+                st.stop()
+            
+            # Si PUEDE jugar, mostrar sus fichas y acciones
             st.subheader(f"🎴 Fichas de {jugador.nombre}")
             
             if jugador.fichas:
@@ -73,69 +116,53 @@ with col2:
                 idx = opciones_fichas.index(seleccion)
                 ficha = jugador.fichas[idx]
                 
-                # Botones para la ficha
-                col_a, col_b, col_c = st.columns(3)
+                # Botón para girar
+                if st.button("🔄 Girar 90°"):
+                    ficha.girar_90()
+                    agregar_mensaje(f"🔄 Ficha girada: {ficha.mostrar_valores()}", "info")
+                    st.rerun()
                 
-                with col_a:
-                    if st.button("🔄 Girar 90°"):
-                        ficha.girar_90()
-                        agregar_mensaje(f"🔄 Ficha girada: {ficha.mostrar_valores()}", "info")
-                        st.rerun()
+                # Colocar ficha
+                st.subheader("📍 Colocar en casilla")
                 
-                with col_b:
-                    if st.button("❌ Descartar ficha"):
-                        agregar_mensaje(f"❌ Ficha {ficha.mostrar_valores()} descartada", "warning")
-                        # Aquí podrías implementar lógica de descarte
-                        st.rerun()
+                if partida.tablero.primera_jugada:
+                    # Primera jugada: cualquier casilla libre
+                    casillas_libres = [c for c in partida.tablero.casillas if c.ficha is None]
+                    opciones_casillas = [f"{c.numero} ({c.orientacion})" for c in casillas_libres]
+                else:
+                    # Solo HEAD y TAIL
+                    head = partida.tablero.head_posible.casilla
+                    tail = partida.tablero.tail_posible.casilla
+                    casillas_libres = [head, tail]
+                    opciones_casillas = [
+                        f"{head.numero} HEAD (requiere {partida.tablero.head_posible.texto()})",
+                        f"{tail.numero} TAIL (requiere {partida.tablero.tail_posible.texto()})"
+                    ]
                 
-                with col_c:
-                    # Colocar ficha
-                    st.subheader("📍 Colocar en casilla")
+                if casillas_libres:
+                    seleccion_casilla = st.selectbox("Elige casilla:", opciones_casillas)
+                    idx_casilla = opciones_casillas.index(seleccion_casilla)
+                    casilla = casillas_libres[idx_casilla]
                     
-                    if partida.tablero.primera_jugada:
-                        # Primera jugada: cualquier casilla libre
-                        casillas_libres = [c for c in partida.tablero.casillas if c.ficha is None]
-                        opciones_casillas = [f"{c.numero} ({c.orientacion})" for c in casillas_libres]
-                    else:
-                        # Solo HEAD y TAIL
-                        head = partida.tablero.head_posible.casilla
-                        tail = partida.tablero.tail_posible.casilla
-                        casillas_libres = [head, tail]
-                        opciones_casillas = [
-                            f"{head.numero} HEAD (requiere {partida.tablero.head_posible.texto()})",
-                            f"{tail.numero} TAIL (requiere {partida.tablero.tail_posible.texto()})"
-                        ]
-                    
-                    if casillas_libres:
-                        seleccion_casilla = st.selectbox("Elige casilla:", opciones_casillas)
-                        idx_casilla = opciones_casillas.index(seleccion_casilla)
-                        casilla = casillas_libres[idx_casilla]
-                        
-                        if st.button("✅ Colocar ficha", type="primary"):
-                            # Verificar orientación
-                            if ficha.orientacion != casilla.orientacion:
-                                agregar_mensaje(f"❌ La ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
+                    if st.button("✅ Colocar ficha", type="primary"):
+                        # Verificar orientación
+                        if ficha.orientacion != casilla.orientacion:
+                            agregar_mensaje(f"❌ La ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
+                        else:
+                            exito = partida.jugar_ficha(ficha, casilla)
+                            if exito:
+                                agregar_mensaje(f"✅ Ficha colocada en casilla {casilla.numero}", "success")
+                                if partida.jugador_gano():
+                                    agregar_mensaje(f"🎉🎉🎉 ¡{jugador.nombre} GANÓ!", "success")
+                                    partida.terminada = True
+                                    partida.ganador = jugador
                             else:
-                                exito = partida.jugar_ficha(ficha, casilla)
-                                if exito:
-                                    agregar_mensaje(f"✅ Ficha colocada en casilla {casilla.numero}", "success")
-                                    if partida.jugador_gano():
-                                        agregar_mensaje(f"🎉🎉🎉 ¡{jugador.nombre} GANÓ!", "success")
-                                        partida.terminada = True
-                                        partida.ganador = jugador
-                                else:
-                                    agregar_mensaje("❌ La ficha no encaja en esa casilla", "error")
-                            st.rerun()
+                                agregar_mensaje("❌ La ficha no encaja en esa casilla", "error")
+                        st.rerun()
             else:
                 st.warning("No tienes fichas")
             
-            # Botón para pasar turno
-            if st.button("⏭️ Pasar turno", type="secondary"):
-                agregar_mensaje(f"⏭️ {jugador.nombre} pasa turno", "warning")
-                partida.cambiar_turno()
-                st.rerun()
-            
-            # Mostrar extremos DEBAJO del botón de pasar turno
+            # Mostrar extremos DEBAJO de todo
             st.divider()
             st.subheader("🔢 Extremos")
             
