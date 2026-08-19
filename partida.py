@@ -30,6 +30,7 @@ class Partida:
 
         # Flag: el jugador actual ya robó en este turno?
         self.ya_robo_en_turno = False
+        self.ficha_robada = None  # <--- NUEVO: guardar la ficha robada
 
         # Reparto inicial
         self.repartir_fichas()
@@ -53,6 +54,7 @@ class Partida:
         """Cambia al siguiente jugador y resetea el flag de robo"""
         self.turno = (self.turno + 1) % len(self.jugadores)
         self.ya_robo_en_turno = False
+        self.ficha_robada = None  # <--- NUEVO: resetear
 
 
     def puede_jugar(self, jugador):
@@ -111,6 +113,7 @@ class Partida:
         
         jugador.recibir_ficha(ficha)
         self.ya_robo_en_turno = True
+        self.ficha_robada = ficha  # <--- NUEVO: guardar la ficha robada
         return ficha
 
 
@@ -123,13 +126,13 @@ class Partida:
             jugador = self.jugador_actual()
         
         # Solo se puede pasar si ya se robó en este turno
-        # O si el jugador está bloqueado (no puede jugar ni robar)
-        if not self.ya_robo_en_turno and self.puede_jugar(jugador):
-            return False  # No se puede pasar voluntariamente sin haber robado
+        if not self.ya_robo_en_turno:
+            return False
         
         self.cambiar_turno()
         return True
 
+        
 
     def jugar_ficha(self, ficha, casilla):
         """

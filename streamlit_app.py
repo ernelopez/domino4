@@ -79,24 +79,25 @@ with col2:
         # ============================================
         # CASO 1: Ya robó en este turno
         # ============================================
+
         if ya_robo:
             st.info("📌 Ya robaste una ficha en este turno.")
             
-            # Mostrar fichas del jugador
-            st.subheader(f"🎴 Fichas de {jugador.nombre}")
+            # Mostrar SOLO la ficha que robó
+            st.subheader(f"🎴 Ficha robada")
             
-            if jugador.fichas:
-                opciones_fichas = [f"{i+1}. {ficha.mostrar_valores()} ({ficha.orientacion})" 
-                                  for i, ficha in enumerate(jugador.fichas)]
-                seleccion = st.selectbox("Elige una ficha:", opciones_fichas, key="ficha_ya_robo")
-                idx = opciones_fichas.index(seleccion)
-                ficha = jugador.fichas[idx]
+            ficha = partida.ficha_robada
+            
+            if ficha:
+                st.write(f"📌 {ficha.mostrar_valores()} ({ficha.orientacion})")
                 
-                if st.button("🔄 Girar 90°", key="girar_ya_robo"):
+                # Botón para girar la ficha robada
+                if st.button("🔄 Girar 90°", key="girar_robada"):
                     ficha.girar_90()
                     agregar_mensaje(f"🔄 Ficha girada: {ficha.mostrar_valores()}", "info")
                     st.rerun()
                 
+                # Colocar la ficha robada
                 st.subheader("📍 Colocar en casilla")
                 
                 if partida.tablero.primera_jugada:
@@ -112,11 +113,11 @@ with col2:
                     ]
                 
                 if casillas_libres:
-                    seleccion_casilla = st.selectbox("Elige casilla:", opciones_casillas, key="casilla_ya_robo")
+                    seleccion_casilla = st.selectbox("Elige casilla:", opciones_casillas, key="casilla_robada")
                     idx_casilla = opciones_casillas.index(seleccion_casilla)
                     casilla = casillas_libres[idx_casilla]
                     
-                    if st.button("✅ Colocar ficha", type="primary", key="colocar_ya_robo"):
+                    if st.button("✅ Colocar ficha", type="primary", key="colocar_robada"):
                         if ficha.orientacion != casilla.orientacion:
                             agregar_mensaje(f"❌ La ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
                         else:
@@ -129,7 +130,7 @@ with col2:
                                 agregar_mensaje("❌ La ficha no encaja en esa casilla", "error")
                         st.rerun()
             else:
-                st.warning("No tienes fichas")
+                st.warning("No hay ficha robada (error)")
             
             # Pasar turno (disponible porque ya robó)
             if st.button("⏭️ Pasar turno", type="secondary", key="pasar_ya_robo"):
