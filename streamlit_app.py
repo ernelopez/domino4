@@ -79,12 +79,11 @@ with col2:
         # ============================================
         # CASO 1: Ya robó en este turno
         # ============================================
-
         if ya_robo:
-            st.info("📌 Ya robaste una ficha en este turno.")
+            st.info(f"📌 {jugador.nombre} ya robó una ficha en este turno.")
             
             # Mostrar SOLO la ficha que robó
-            st.subheader(f"🎴 Ficha robada")
+            st.subheader(f"🎴 Ficha robada por {jugador.nombre}")
             
             ficha = partida.ficha_robada
             
@@ -94,7 +93,7 @@ with col2:
                 # Botón para girar la ficha robada
                 if st.button("🔄 Girar 90°", key="girar_robada"):
                     ficha.girar_90()
-                    agregar_mensaje(f"🔄 Ficha girada: {ficha.mostrar_valores()}", "info")
+                    agregar_mensaje(f"🔄 {jugador.nombre} giró su ficha: {ficha.mostrar_valores()}", "info")
                     st.rerun()
                 
                 # Colocar la ficha robada
@@ -119,15 +118,15 @@ with col2:
                     
                     if st.button("✅ Colocar ficha", type="primary", key="colocar_robada"):
                         if ficha.orientacion != casilla.orientacion:
-                            agregar_mensaje(f"❌ La ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
+                            agregar_mensaje(f"❌ {jugador.nombre}: la ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
                         else:
                             exito = partida.jugar_ficha(ficha, casilla)
                             if exito:
-                                agregar_mensaje(f"✅ Ficha colocada en casilla {casilla.numero}", "success")
+                                agregar_mensaje(f"✅ {jugador.nombre} colocó {ficha.mostrar_valores()} en casilla {casilla.numero}", "success")
                                 if partida.jugador_gano():
                                     agregar_mensaje(f"🎉🎉🎉 ¡{jugador.nombre} GANÓ!", "success")
                             else:
-                                agregar_mensaje("❌ La ficha no encaja en esa casilla", "error")
+                                agregar_mensaje(f"❌ {jugador.nombre}: la ficha no encaja en esa casilla", "error")
                         st.rerun()
             else:
                 st.warning("No hay ficha robada (error)")
@@ -154,7 +153,7 @@ with col2:
                 
                 if st.button("🔄 Girar 90°", key="girar_no_robo"):
                     ficha.girar_90()
-                    agregar_mensaje(f"🔄 Ficha girada: {ficha.mostrar_valores()}", "info")
+                    agregar_mensaje(f"🔄 {jugador.nombre} giró su ficha: {ficha.mostrar_valores()}", "info")
                     st.rerun()
                 
                 st.subheader("📍 Colocar en casilla")
@@ -178,18 +177,18 @@ with col2:
                     
                     if st.button("✅ Colocar ficha", type="primary", key="colocar_no_robo"):
                         if ficha.orientacion != casilla.orientacion:
-                            agregar_mensaje(f"❌ La ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
+                            agregar_mensaje(f"❌ {jugador.nombre}: la ficha es {ficha.orientacion} pero la casilla es {casilla.orientacion}", "error")
                         else:
                             exito = partida.jugar_ficha(ficha, casilla)
                             if exito:
-                                agregar_mensaje(f"✅ Ficha colocada en casilla {casilla.numero}", "success")
+                                agregar_mensaje(f"✅ {jugador.nombre} colocó {ficha.mostrar_valores()} en casilla {casilla.numero}", "success")
                                 if partida.jugador_gano():
                                     agregar_mensaje(f"🎉🎉🎉 ¡{jugador.nombre} GANÓ!", "success")
                             else:
-                                agregar_mensaje("❌ La ficha no encaja en esa casilla", "error")
+                                agregar_mensaje(f"❌ {jugador.nombre}: la ficha no encaja en esa casilla", "error")
                         st.rerun()
             else:
-                st.warning("No tienes fichas")
+                st.warning(f"{jugador.nombre} no tiene fichas")
             
             # Botón para robar (SIEMPRE disponible si el pozo tiene fichas)
             if puede_robar:
