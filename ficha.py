@@ -122,6 +122,7 @@ class Ficha:
         else:
             return f"[{self.textos['N']} | {self.textos['S']}]"
 
+
     def __str__(self):
         """Representación en string de la ficha"""
         return self.mostrar_valores()

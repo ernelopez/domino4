@@ -1,3 +1,5 @@
+# partida.py
+
 from tablero import Tablero
 from pozo import Pozo
 from jugador import Jugador
@@ -26,301 +28,200 @@ class Partida:
         self.terminada = False
         self.ganador = None
 
+        # Flag: el jugador actual ya robó en este turno?
+        self.ya_robo_en_turno = False
+
         # Reparto inicial
         self.repartir_fichas()
 
 
     def repartir_fichas(self):
-
+        """Reparte 6 fichas a cada jugador"""
         for jugador in self.jugadores:
-
             for _ in range(6):
-
                 ficha = self.pozo.sacar()
-
-                jugador.recibir_ficha(ficha)
+                if ficha is not None:
+                    jugador.recibir_ficha(ficha)
 
 
     def jugador_actual(self):
-
+        """Devuelve el jugador que tiene el turno"""
         return self.jugadores[self.turno]
 
 
     def cambiar_turno(self):
-
+        """Cambia al siguiente jugador y resetea el flag de robo"""
         self.turno = (self.turno + 1) % len(self.jugadores)
+        self.ya_robo_en_turno = False
 
 
     def puede_jugar(self, jugador):
-
-        # Primera jugada
+        """Verifica si el jugador tiene alguna jugada posible con sus fichas actuales"""
+        # Si no tiene fichas, no puede jugar
+        if jugador.cantidad_fichas() == 0:
+            return False
+        
+        # Primera jugada: siempre puede jugar si tiene fichas
         if self.tablero.primera_jugada:
             return True
-
+        
         valor_head = self.tablero.head_posible.valor
         valor_tail = self.tablero.tail_posible.valor
-
+        
         for ficha in jugador.fichas:
-
-            for valor in ficha.valores.values():
-
-                if valor == valor_head or valor == valor_tail:
-                    return True
-        '''
-        for j in self.jugadores :
-            if j.nombre == jugador :
-                for ficha in j.fichas :
-                    for valor in ficha.valores.values():
-                        #print(valor)
-                        if valor == valor_head or valor == valor_tail:
-                            return True
-        '''
+            # Verificar todos los valores de la ficha (O, E, N, S)
+            for clave, valor in ficha.valores.items():
+                if valor is not None:
+                    if valor == valor_head or valor == valor_tail:
+                        return True
+        
         return False
 
 
-    def levantar_ficha(self, jugador):
-        """Robar una ficha del pozo. Retorna la ficha o None si el pozo está vacío"""
-        ficha = self.pozo.sacar()
+    def puede_robar(self, jugador=None):
+        """Verifica si el jugador puede robar del pozo"""
+        if jugador is None:
+            jugador = self.jugador_actual()
         
+        # Ya robó en este turno
+        if self.ya_robo_en_turno:
+            return False
+        
+        # Pozo vacío
+        if self.pozo.cantidad() == 0:
+            return False
+        
+        return True
+
+
+    def robar_ficha(self, jugador=None):
+        """
+        Roba una ficha del pozo.
+        Retorna la ficha robada o None si no se puede.
+        """
+        if jugador is None:
+            jugador = self.jugador_actual()
+        
+        if not self.puede_robar(jugador):
+            return None
+        
+        ficha = self.pozo.sacar()
         if ficha is None:
             return None
         
         jugador.recibir_ficha(ficha)
+        self.ya_robo_en_turno = True
         return ficha
 
 
-
-    def comprobar_derrota(self):
-
-        jugador = self.jugador_actual()
-
-        if jugador.cantidad_fichas() == 0:
-            return False
-
-        if self.pozo.cantidad() == 0 and not self.puede_jugar(jugador):
-            return True
-
-        return False
-
-
-    def jugador_perdio(self):
-
-        jugador = self.jugador_actual()
-
-        return (
-            self.pozo.cantidad() == 0
-            and
-            not self.puede_jugar(jugador)
-        )
-
-
-    def jugador_gano(self):
-
-        jugador = self.jugador_actual()
-
-        return jugador.cantidad_fichas() == 0
-
-
-    #corregido por Deep Seek
-    def jugar_ficha(self, ficha, casilla):
-        """Intenta colocar una ficha en una casilla. Solo cambia turno si tiene éxito."""
-        jugador = self.jugador_actual()
-
-        # La ficha debe estar en la mano del jugador actual
-        if ficha not in jugador.fichas:
-            return False
-
-        if self.tablero.primera_jugada:
-            colocada = self.tablero.colocar_primera_ficha(ficha,casilla)
-        else :
-            colocada = self.tablero.colocar_ficha(ficha, casilla)
-
-        # El tablero rechazó la jugada
-        if not colocada:
-            return False
-
-        # La ficha deja de estar en la mano
-        jugador.sacar_ficha(ficha)
-
-        # ¿Ganó el jugador?
-        if self.jugador_gano():
-            self.terminada = True
-            self.ganador = jugador
-            #return True
-
-        # Cambiar turno (solo si se colocó correctamente)
+    def pasar_turno(self, jugador=None):
+        """
+        Pasa el turno al siguiente jugador sin colocar ficha.
+        Retorna True si se pudo pasar, False si no está permitido.
+        """
+        if jugador is None:
+            jugador = self.jugador_actual()
+        
+        # Solo se puede pasar si ya se robó en este turno
+        # O si el jugador está bloqueado (no puede jugar ni robar)
+        if not self.ya_robo_en_turno and self.puede_jugar(jugador):
+            return False  # No se puede pasar voluntariamente sin haber robado
+        
         self.cambiar_turno()
-
         return True
 
 
-
-    #métodos creados por DeepSeek
-    def turno_actual(self):
-        """Ejecuta el turno del jugador actual"""
+    def jugar_ficha(self, ficha, casilla):
+        """
+        Intenta colocar una ficha en una casilla.
+        Solo cambia turno si tiene éxito.
+        Retorna True si se colocó correctamente.
+        """
         jugador = self.jugador_actual()
         
-        # Mostrar estado del juego
-        self.mostrar_estado()
+        # La ficha debe estar en la mano del jugador
+        if ficha not in jugador.fichas:
+            return False
         
-        # Verificar si el jugador puede jugar
-        if not self.puede_jugar(jugador):
-            print(f"\n{jugador.nombre} no puede jugar con sus fichas actuales.")
-            
-            # Intentar robar del pozo
-            if self.pozo.cantidad() > 0:
-                ficha = self.levantar_ficha(jugador)
-                print(f"{jugador.nombre} robó una ficha del pozo.")
-                
-                # Si ahora puede jugar, sigue su turno
-                if self.puede_jugar(jugador):
-                    print(f"{jugador.nombre} ahora puede jugar.")
-                    self.turno_actual()  # Reintenta el mismo turno
-                    return
-                else:
-                    print(f"{jugador.nombre} aún no puede jugar. Pasa turno.")
-            else:
-                print(f"{jugador.nombre} pasa turno (pozo vacío).")
-            
-            # Cambiar turno
-            self.cambiar_turno()
-            return
-        
-        # Mostrar fichas del jugador
-        jugador.mostrar_fichas()
-        
-        # Mostrar extremos disponibles
-        self.mostrar_extremos()
-        
-        # Pedir jugada
-        print(f"\n--- Turno de {jugador.nombre} ---")
-        print("Selecciona una ficha (número) o 0 para pasar turno:")
-        
-        try:
-            seleccion_ficha = int(input("Ficha: "))
-            
-            if seleccion_ficha == 0:
-                print(f"{jugador.nombre} pasa turno.")
-                self.cambiar_turno()
-                return
-            
-            if 1 <= seleccion_ficha <= len(jugador.fichas):
-                ficha = jugador.fichas[seleccion_ficha - 1]
-                
-                # Pedir casilla
-                print("¿En qué casilla quieres colocar la ficha? (número)")
-                print("Las casillas disponibles son:")
-                self.mostrar_casillas_libres()
-                
-                try:
-                    num_casilla = int(input("Casilla: "))
-                    
-                    # Buscar la casilla
-                    casilla = None
-                    for c in self.tablero.casillas:
-                        if c.numero == num_casilla:
-                            casilla = c
-                            break
-                    
-                    if casilla is None:
-                        print("❌ Casilla inválida. La ficha vuelve a tu mano.")
-                        self.turno_actual()  # Reintentar
-                        return
-                    
-                    # Intentar colocar
-                    if self.tablero.primera_jugada:
-                        # Primera jugada: puede ir en cualquier casilla libre
-                        if casilla.ficha is not None:
-                            print("❌ Esa casilla ya está ocupada. La ficha vuelve a tu mano.")
-                            self.turno_actual()
-                            return
-                        
-                        # Verificar orientación
-                        if ficha.orientacion != casilla.orientacion:
-                            print("❌ La ficha no tiene la orientación correcta para esa casilla.")
-                            print("   Puedes girarla con 'g' antes de colocarla.")
-                            self.turno_actual()
-                            return
-                        
-                        # Colocar
-                        colocada = self.jugar_ficha(ficha, casilla)
-                        
-                    else:
-                        # Jugadas siguientes: solo head o tail
-                        # Verificar si es head o tail
-                        es_head = casilla.numero == self.tablero.head_posible.casilla.numero
-                        es_tail = casilla.numero == self.tablero.tail_posible.casilla.numero
-                        
-                        if not es_head and not es_tail:
-                            print("❌ Esa casilla no es un extremo (head o tail). La ficha vuelve a tu mano.")
-                            self.turno_actual()
-                            return
-                        
-                        # Verificar que esté libre
-                        if casilla.ficha is not None:
-                            print("❌ Esa casilla ya está ocupada. La ficha vuelve a tu mano.")
-                            self.turno_actual()
-                            return
-                        
-                        # Verificar orientación
-                        if ficha.orientacion != casilla.orientacion:
-                            print("❌ La ficha no tiene la orientación correcta para esa casilla.")
-                            print("   Puedes girarla con 'g' antes de colocarla.")
-                            self.turno_actual()
-                            return
-                        
-                        # Verificar que encaje
-                        posible, _ = self.tablero.puede_colocar(ficha, casilla)
-                        
-                        if not posible:
-                            print("❌ La ficha no encaja en ese extremo. La ficha vuelve a tu mano.")
-                            self.turno_actual()
-                            return
-                        
-                        # Colocar
-                        colocada = self.jugar_ficha(ficha, casilla)
-                    
-                    # Si se colocó correctamente, el turno ya cambió dentro de jugar_ficha
-                    if colocada:
-                        print(f"✅ {jugador.nombre} colocó la ficha correctamente.")
-                        
-                        # Verificar si ganó
-                        if self.jugador_gano():
-                            self.terminada = True
-                            self.ganador = jugador
-                            return
-                    else:
-                        print("❌ Error al colocar la ficha. La ficha vuelve a tu mano.")
-                        self.turno_actual()
-                        
-                except ValueError:
-                    print("❌ Entrada inválida. La ficha vuelve a tu mano.")
-                    self.turno_actual()
-                    
-            else:
-                print("❌ Número de ficha inválido. La ficha vuelve a tu mano.")
-                self.turno_actual()
-                
-        except ValueError:
-            print("❌ Entrada inválida.")
-            self.turno_actual()
-
-
-    def mostrar_casillas_libres(self):
-        """Muestra las casillas que están libres"""
-        libres = [c for c in self.tablero.casillas if c.ficha is None]
-        
+        # Primera jugada
         if self.tablero.primera_jugada:
-            print("  (Primera jugada - cualquier casilla libre sirve)")
+            colocada = self.tablero.colocar_primera_ficha(ficha, casilla)
+        else:
+            colocada = self.tablero.colocar_ficha(ficha, casilla)
         
-        for casilla in libres:
-            es_head = not self.tablero.primera_jugada and casilla.numero == self.tablero.head_posible.casilla.numero
-            es_tail = not self.tablero.primera_jugada and casilla.numero == self.tablero.tail_posible.casilla.numero
-            
-            etiqueta = ""
-            if es_head:
-                etiqueta = " [HEAD]"
-            elif es_tail:
-                etiqueta = " [TAIL]"
-            
-            print(f"  Casilla {casilla.numero} ({casilla.orientacion}){etiqueta}")
+        if not colocada:
+            return False
+        
+        # La ficha deja de estar en la mano
+        jugador.sacar_ficha(ficha)
+        
+        # Verificar si ganó
+        if self.jugador_gano():
+            self.terminada = True
+            self.ganador = jugador
+        
+        # Cambiar turno (solo si se colocó correctamente)
+        self.cambiar_turno()
+        
+        return True
+
+
+    def jugador_gano(self):
+        """Verifica si el jugador actual ganó (sin fichas)"""
+        jugador = self.jugador_actual()
+        return jugador.cantidad_fichas() == 0
+
+
+    def partida_bloqueada(self):
+        """Verifica si la partida está bloqueada (nadie puede jugar ni robar)"""
+        for jugador in self.jugadores:
+            if self.puede_jugar(jugador) or self.puede_robar(jugador):
+                return False
+        return True
+
+
+    def obtener_ganador_por_menos_fichas(self):
+        """
+        Cuando la partida se bloquea, gana el que tiene menos fichas.
+        Si empatan en cantidad, gana el que tiene menos suma de valores.
+        Retorna el jugador ganador o None si hay empate total.
+        """
+        j1 = self.jugadores[0]
+        j2 = self.jugadores[1]
+        
+        # Primero por cantidad de fichas
+        if j1.cantidad_fichas() < j2.cantidad_fichas():
+            return j1
+        elif j2.cantidad_fichas() < j1.cantidad_fichas():
+            return j2
+        
+        # Empate en cantidad: por suma de valores
+        suma_j1 = 0
+        for ficha in j1.fichas:
+            for valor in ficha.valores.values():
+                if valor is not None:
+                    suma_j1 += valor
+        
+        suma_j2 = 0
+        for ficha in j2.fichas:
+            for valor in ficha.valores.values():
+                if valor is not None:
+                    suma_j2 += valor
+        
+        if suma_j1 < suma_j2:
+            return j1
+        elif suma_j2 < suma_j1:
+            return j2
+        else:
+            return None  # Empate total
+
+
+    def mostrar_estado(self):
+        """Muestra el estado actual del juego (para consola)"""
+        print("\n" + "="*60)
+        print(f"TURNO: {self.jugador_actual().nombre}")
+        print(f"Fichas en pozo: {self.pozo.cantidad()}")
+        print(f"Fichas jugadas: {len(self.tablero.fichas_jugadas)}")
+        if self.ya_robo_en_turno:
+            print("📍 Ya robaste en este turno")
+        print("="*60)
