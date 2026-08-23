@@ -6,7 +6,9 @@ import os
 from partida import Partida
 from config import LARGO_FICHA, ANCHO_FICHA, MARGEN_TABLERO
 
-# Constantes de pantalla (se recalcularán dinámicamente)
+# Constantes de pantalla
+ANCHO_PANTALLA = 1400
+ALTO_PANTALLA = 900
 COLOR_FONDO = (40, 40, 40)
 COLOR_BOTON = (70, 70, 70)
 COLOR_BOTON_HOVER = (100, 100, 100)
@@ -22,17 +24,17 @@ class Boton:
         self.color = color
         self.color_hover = color_hover
         self.activo = True
-        self.fuente = None  # Se asignará después
+        self.fuente = pygame.font.Font(None, 28)
     
-    def dibujar(self, pantalla, fuente):
+    def dibujar(self, pantalla):
         color = self.color_hover if self.esta_sobre() and self.activo else self.color
         pygame.draw.rect(pantalla, color, self.rect, border_radius=8)
         pygame.draw.rect(pantalla, (150, 150, 150), self.rect, 2, border_radius=8)
         
         if self.activo:
-            texto = fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
+            texto = self.fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
         else:
-            texto = fuente.render(self.texto, True, (100, 100, 100))
+            texto = self.fuente.render(self.texto, True, (100, 100, 100))
         pantalla.blit(texto, (self.rect.x + 10, self.rect.y + 8))
     
     def esta_sobre(self):
@@ -46,18 +48,13 @@ class JuegoPygame:
     def __init__(self):
         pygame.init()
         
-        # Obtener tamaño de la pantalla
-        info = pygame.display.Info()
-        self.ancho_pantalla = info.current_w
-        self.alto_pantalla = info.current_h
-        
-        # Crear pantalla completa
-        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
-        pygame.display.set_caption("Dominó de Fracciones - ESC para salir")
+        # Configurar pantalla
+        self.pantalla = pygame.display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))
+        pygame.display.set_caption("Dominó de Fracciones")
         self.clock = pygame.time.Clock()
-        
-        # Recalcular tamaños según resolución
-        self.recalcular_tamanos()
+        self.fuente = pygame.font.Font(None, 24)
+        self.fuente_grande = pygame.font.Font(None, 36)
+        self.fuente_fraccion = pygame.font.Font(None, 20)
         
         # Cargar imágenes
         self.cargar_imagenes()
@@ -84,36 +81,6 @@ class JuegoPygame:
         # Crear botones
         self.crear_botones()
     
-    def recalcular_tamanos(self):
-        """Recalcula todos los tamaños según la resolución actual"""
-        # Tamaño base de referencia (lo que tenías antes)
-        BASE_ANCHO = 1400
-        BASE_ALTO = 900
-        
-        # Factores de escala
-        self.escala_x = self.ancho_pantalla / BASE_ANCHO
-        self.escala_y = self.alto_pantalla / BASE_ALTO
-        self.escala = min(self.escala_x, self.escala_y)  # Usar el menor para no recortar
-        
-        # Tamaños escalados
-        self.largo_ficha = int(LARGO_FICHA * self.escala)
-        self.ancho_ficha = int(ANCHO_FICHA * self.escala)
-        self.margen_tablero = int(MARGEN_TABLERO * self.escala)
-        
-        # Fuentes escaladas
-        self.tamano_fuente = max(12, int(24 * self.escala))
-        self.tamano_fuente_grande = max(16, int(36 * self.escala))
-        self.tamano_fuente_fraccion = max(10, int(20 * self.escala))
-        
-        # Actualizar fuentes
-        self.fuente = pygame.font.Font(None, self.tamano_fuente)
-        self.fuente_grande = pygame.font.Font(None, self.tamano_fuente_grande)
-        self.fuente_fraccion = pygame.font.Font(None, self.tamano_fuente_fraccion)
-        
-        print(f"📐 Escalado: {self.escala:.2f}x")
-        print(f"   Ficha: {self.largo_ficha}x{self.ancho_ficha}")
-        print(f"   Fuente: {self.tamano_fuente}px")
-    
     def cargar_imagenes(self):
         """Carga las imágenes de los assets"""
         try:
@@ -126,8 +93,8 @@ class JuegoPygame:
             self.img_frente = pygame.image.load(ruta_frente)
             self.img_dorso = pygame.image.load(ruta_dorso)
             
-            self.img_frente = pygame.transform.scale(self.img_frente, (self.largo_ficha, self.ancho_ficha))
-            self.img_dorso = pygame.transform.scale(self.img_dorso, (self.largo_ficha, self.ancho_ficha))
+            self.img_frente = pygame.transform.scale(self.img_frente, (LARGO_FICHA, ANCHO_FICHA))
+            self.img_dorso = pygame.transform.scale(self.img_dorso, (LARGO_FICHA, ANCHO_FICHA))
             
             print("✅ Imágenes cargadas correctamente")
         except Exception as e:
@@ -137,8 +104,6 @@ class JuegoPygame:
     
     def calcular_offset_tablero(self):
         """Calcula el offset para centrar el tablero en la pantalla"""
-        # Usar los tamaños ORIGINALES de las casillas (los de config.py)
-        # porque las posiciones de las casillas están calculadas con esos valores
         min_x = float('inf')
         max_x = float('-inf')
         min_y = float('inf')
@@ -154,41 +119,26 @@ class JuegoPygame:
             if casilla.y > max_y:
                 max_y = casilla.y
         
-        # IMPORTANTE: Usar el tamaño ORIGINAL para el bounding box
-        max_x += LARGO_FICHA   # <--- Usar la constante ORIGINAL
-        max_y += LARGO_FICHA   # <--- Usar la constante ORIGINAL
+        max_x += LARGO_FICHA
+        max_y += LARGO_FICHA
         
-        # El centro del tablero en coordenadas ORIGINALES
         centro_tablero_x = (min_x + max_x) // 2
         centro_tablero_y = (min_y + max_y) // 2
         
-        # El centro de la pantalla en píxeles
-        centro_pantalla_x = self.ancho_pantalla // 2
-        centro_pantalla_y = self.alto_pantalla // 2
-        
-        # Offset = centro_pantalla - centro_tablero (en coordenadas originales)
-        # PERO las coordenadas originales están en píxeles con el tamaño original
-        # Como vamos a escalar al dibujar, el offset debe compensar la escala
-        self.offset_tablero_x = centro_pantalla_x - int(centro_tablero_x * self.escala)
-        self.offset_tablero_y = centro_pantalla_y - int(centro_tablero_y * self.escala)
+        self.offset_tablero_x = ANCHO_PANTALLA // 2 - centro_tablero_x
+        self.offset_tablero_y = ALTO_PANTALLA // 2 - centro_tablero_y
     
     def crear_botones(self):
         """Crea los botones de la interfaz"""
         self.botones = []
         
-        alto_boton = int(40 * self.escala)
-        ancho_boton = int(150 * self.escala)
-        separacion = int(20 * self.escala)
-        margen = int(20 * self.escala)
-        y_boton = self.alto_pantalla - alto_boton - margen
-        
-        self.boton_robar = Boton(margen, y_boton, ancho_boton, alto_boton, "📥 Robar del pozo")
+        self.boton_robar = Boton(20, ALTO_PANTALLA - 70, 150, 40, "📥 Robar del pozo")
         self.botones.append(self.boton_robar)
         
-        self.boton_pasar = Boton(margen + ancho_boton + separacion, y_boton, ancho_boton, alto_boton, "⏭️ Pasar turno")
+        self.boton_pasar = Boton(190, ALTO_PANTALLA - 70, 150, 40, "⏭️ Pasar turno")
         self.botones.append(self.boton_pasar)
         
-        self.boton_girar = Boton(margen + 2 * (ancho_boton + separacion), y_boton, ancho_boton, alto_boton, "🔄 Girar")
+        self.boton_girar = Boton(360, ALTO_PANTALLA - 70, 130, 40, "🔄 Girar")
         self.botones.append(self.boton_girar)
     
     def actualizar_botones(self):
@@ -210,13 +160,12 @@ class JuegoPygame:
         }
         
         # Jugador 1: lateral izquierdo
-        margen = int(30 * self.escala)
-        y_inicial = int(150 * self.escala)
+        x = 30
+        y = 150
         max_por_columna = 15
-        ancho_ficha = self.largo_ficha
-        alto_ficha = self.ancho_ficha
-        separacion = int(10 * self.escala)
-        separacion_columnas = int(20 * self.escala)
+        ancho_ficha = LARGO_FICHA
+        alto_ficha = ANCHO_FICHA
+        separacion = 10
         
         for i, ficha in enumerate(self.partida.jugadores[0].fichas):
             if ficha == self.ficha_arrastrada:
@@ -227,15 +176,15 @@ class JuegoPygame:
             
             self.posiciones_fichas["jugador1"].append({
                 "ficha": ficha,
-                "x": margen + columna * (ancho_ficha + separacion + separacion_columnas),
-                "y": y_inicial + fila * (alto_ficha + separacion),
+                "x": x + columna * (ancho_ficha + separacion + 20),
+                "y": y + fila * (alto_ficha + separacion),
                 "ancho": ancho_ficha,
                 "alto": alto_ficha
             })
         
         # Jugador 2: lateral derecho
-        x = self.ancho_pantalla - margen - self.largo_ficha
-        y_inicial = int(150 * self.escala)
+        x = ANCHO_PANTALLA - 30 - LARGO_FICHA
+        y = 150
         
         for i, ficha in enumerate(self.partida.jugadores[1].fichas):
             if ficha == self.ficha_arrastrada:
@@ -246,8 +195,8 @@ class JuegoPygame:
             
             self.posiciones_fichas["jugador2"].append({
                 "ficha": ficha,
-                "x": x - columna * (ancho_ficha + separacion + separacion_columnas),
-                "y": y_inicial + fila * (alto_ficha + separacion),
+                "x": x - columna * (ancho_ficha + separacion + 20),
+                "y": y + fila * (alto_ficha + separacion),
                 "ancho": ancho_ficha,
                 "alto": alto_ficha
             })
@@ -270,13 +219,13 @@ class JuegoPygame:
         if ficha.orientacion == "horizontal":
             texto1 = self.fuente_fraccion.render(ficha.textos["O"].replace("/", "|"), True, (0, 0, 0))
             texto2 = self.fuente_fraccion.render(ficha.textos["E"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + int(10 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
-            self.pantalla.blit(texto2, (x + ancho - int(30 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
+            self.pantalla.blit(texto1, (x + 10, y + alto//2 - 10))
+            self.pantalla.blit(texto2, (x + ancho - 30, y + alto//2 - 10))
         else:
             texto1 = self.fuente_fraccion.render(ficha.textos["N"].replace("/", "|"), True, (0, 0, 0))
             texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
-            self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
+            self.pantalla.blit(texto1, (x + ancho//2 - 10, y + 10))
+            self.pantalla.blit(texto2, (x + ancho//2 - 10, y + alto - 30))
     
     def dibujar_ficha(self, ficha, x, y, ancho, alto, seleccionada=False, resaltada=False, arrastrada=False, dorso=False):
         """Dibuja una ficha en la pantalla"""
@@ -291,10 +240,10 @@ class JuegoPygame:
             
             if seleccionada or arrastrada:
                 color = (100, 200, 255) if seleccionada else (200, 255, 200)
-                pygame.draw.rect(self.pantalla, color, (x, y, ancho, alto), max(2, int(4 * self.escala)), border_radius=5)
+                pygame.draw.rect(self.pantalla, color, (x, y, ancho, alto), 4, border_radius=5)
             
             if resaltada:
-                pygame.draw.rect(self.pantalla, (50, 255, 50), (x, y, ancho, alto), max(2, int(4 * self.escala)), border_radius=5)
+                pygame.draw.rect(self.pantalla, (50, 255, 50), (x, y, ancho, alto), 4, border_radius=5)
             
             self.dibujar_valores_ficha(ficha, x, y, ancho, alto)
             return
@@ -316,13 +265,13 @@ class JuegoPygame:
         if ficha.orientacion == "horizontal":
             texto1 = self.fuente_fraccion.render(ficha.textos["O"].replace("/", "|"), True, (0, 0, 0))
             texto2 = self.fuente_fraccion.render(ficha.textos["E"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + int(10 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
-            self.pantalla.blit(texto2, (x + ancho - int(30 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
+            self.pantalla.blit(texto1, (x + 10, y + alto//2 - 10))
+            self.pantalla.blit(texto2, (x + ancho - 30, y + alto//2 - 10))
         else:
             texto1 = self.fuente_fraccion.render(ficha.textos["N"].replace("/", "|"), True, (0, 0, 0))
             texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
-            self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
+            self.pantalla.blit(texto1, (x + ancho//2 - 10, y + 10))
+            self.pantalla.blit(texto2, (x + ancho//2 - 10, y + alto - 30))
     
     def dibujar_pozo(self):
         """Dibuja las fichas del pozo boca abajo en el centro del tablero"""
@@ -330,13 +279,13 @@ class JuegoPygame:
         if not fichas_pozo:
             return
         
-        centro_x = self.ancho_pantalla // 2
-        centro_y = self.alto_pantalla // 2
+        centro_x = ANCHO_PANTALLA // 2
+        centro_y = ALTO_PANTALLA // 2
         
         por_fila = 6
-        separacion = int(3 * self.escala)
-        ancho = self.ancho_ficha
-        alto = self.largo_ficha
+        separacion = 3
+        ancho = ANCHO_FICHA
+        alto = LARGO_FICHA
         
         total_ancho = por_fila * (ancho + separacion)
         total_alto = (len(fichas_pozo) // por_fila + 1) * (alto + separacion)
@@ -355,22 +304,21 @@ class JuegoPygame:
             self.dibujar_ficha(ficha, x, y, ancho, alto, dorso=True)
         
         texto = self.fuente.render(f"Pozo: {len(fichas_pozo)} fichas", True, (200, 200, 200))
-        self.pantalla.blit(texto, (centro_x - int(60 * self.escala), inicio_y - int(30 * self.escala)))
+        self.pantalla.blit(texto, (centro_x - 60, inicio_y - 30))
     
     def dibujar_tablero(self):
         """Dibuja el tablero centrado en la pantalla"""
         for casilla in self.partida.tablero.casillas:
-            # ESCALAR la posición original y aplicar offset
-            x = int(casilla.x * self.escala) + self.offset_tablero_x
-            y = int(casilla.y * self.escala) + self.offset_tablero_y
+            x = casilla.x + self.offset_tablero_x
+            y = casilla.y + self.offset_tablero_y
             
             if casilla.ficha is not None:
                 if casilla.orientacion == "horizontal":
-                    ancho = self.largo_ficha
-                    alto = self.ancho_ficha
+                    ancho = LARGO_FICHA
+                    alto = ANCHO_FICHA
                 else:
-                    ancho = self.ancho_ficha
-                    alto = self.largo_ficha
+                    ancho = ANCHO_FICHA
+                    alto = LARGO_FICHA
                 
                 destacada = casilla in self.casillas_destacadas
                 
@@ -383,11 +331,11 @@ class JuegoPygame:
                 )
             else:
                 if casilla.orientacion == "horizontal":
-                    ancho = self.largo_ficha
-                    alto = self.ancho_ficha
+                    ancho = LARGO_FICHA
+                    alto = ANCHO_FICHA
                 else:
-                    ancho = self.ancho_ficha
-                    alto = self.largo_ficha
+                    ancho = ANCHO_FICHA
+                    alto = LARGO_FICHA
                 
                 color = COLOR_CASILLA_DESTACADA if casilla in self.casillas_destacadas else (50, 50, 50)
                 pygame.draw.rect(self.pantalla, color, (x, y, ancho, alto), 1)
@@ -419,20 +367,19 @@ class JuegoPygame:
     
     def obtener_casilla_en_posicion(self, x, y):
         """Devuelve la casilla que está en la posición (x, y)"""
-        # Ajustar por el offset y desescalar
-        x_ajustada = (x - self.offset_tablero_x) / self.escala
-        y_ajustada = (y - self.offset_tablero_y) / self.escala
+        x_ajustada = x - self.offset_tablero_x
+        y_ajustada = y - self.offset_tablero_y
         
         for casilla in self.partida.tablero.casillas:
             casilla_x = casilla.x
             casilla_y = casilla.y
             
             if casilla.orientacion == "horizontal":
-                ancho = LARGO_FICHA   # <--- Tamaño ORIGINAL
-                alto = ANCHO_FICHA    # <--- Tamaño ORIGINAL
+                ancho = LARGO_FICHA
+                alto = ANCHO_FICHA
             else:
-                ancho = ANCHO_FICHA   # <--- Tamaño ORIGINAL
-                alto = LARGO_FICHA    # <--- Tamaño ORIGINAL
+                ancho = ANCHO_FICHA
+                alto = LARGO_FICHA
             
             if (casilla_x <= x_ajustada <= casilla_x + ancho and
                 casilla_y <= y_ajustada <= casilla_y + alto):
@@ -506,19 +453,6 @@ class JuegoPygame:
                 if evento.type == pygame.QUIT:
                     ejecutando = False
                 
-                elif evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_ESCAPE:
-                        ejecutando = False
-                    elif evento.key == pygame.K_g:
-                        if self.ficha_seleccionada is not None and not self.partida.terminada:
-                            self.ficha_seleccionada.girar_90()
-                            self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
-                            self.actualizar_posiciones_fichas()
-                            self.actualizar_botones()
-                    elif evento.key == pygame.K_f:
-                        # Alternar pantalla completa
-                        pygame.display.toggle_fullscreen()
-                
                 elif evento.type == pygame.MOUSEBUTTONDOWN:
                     if evento.button == 1:
                         x, y = evento.pos
@@ -535,6 +469,7 @@ class JuegoPygame:
                                             self.mostrar_mensaje(f"📥 {self.partida.jugador_actual().nombre} robó: {ficha.mostrar_valores()}")
                                             self.actualizar_posiciones_fichas()
                                             self.actualizar_botones()
+                                            #self.verificar_y_mostrar_fin_partida()
                                         else:
                                             self.mostrar_mensaje("❌ No hay fichas en el pozo")
                                     continue
@@ -559,7 +494,9 @@ class JuegoPygame:
                                         self.actualizar_posiciones_fichas()
                                     continue
                         
-                        # Seleccionar ficha con click
+                        # ============================================
+                        # SELECCIONAR FICHA CON CLICK
+                        # ============================================
                         ficha, jugador = self.obtener_ficha_en_posicion(x, y)
                         
                         if ficha is not None and jugador == self.partida.jugador_actual() and not self.partida.terminada:
@@ -632,6 +569,27 @@ class JuegoPygame:
                             self.ficha_arrastrada, 
                             self.partida.jugador_actual()
                         )
+                
+                elif evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_g:
+                        if self.ficha_seleccionada is not None and not self.partida.terminada:
+                            self.ficha_seleccionada.girar_90()
+                            self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
+                            self.actualizar_posiciones_fichas()
+                            self.actualizar_botones()
+                    elif evento.key == pygame.K_ESCAPE:
+                        self.ficha_seleccionada = None
+                        self.ficha_arrastrada = None
+                        self.ficha_robada_actual = None
+                        self.casillas_destacadas = []
+                        self.actualizar_posiciones_fichas()
+                        self.actualizar_botones()
+                        self.mostrar_mensaje("❌ Selección cancelada")
+            
+            # ============================================
+            # NO HAY VERIFICACIÓN DE FIN DE PARTIDA AQUÍ
+            # (solo se verifica después de acciones)
+            # ============================================
             
             # Dibujar
             self.pantalla.fill(COLOR_FONDO)
@@ -640,11 +598,11 @@ class JuegoPygame:
                 f"Turno: {self.partida.jugador_actual().nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
                 True, (255, 255, 255)
             )
-            self.pantalla.blit(texto_turno, (self.ancho_pantalla//2 - int(100 * self.escala), int(20 * self.escala)))
+            self.pantalla.blit(texto_turno, (ANCHO_PANTALLA//2 - 100, 20))
             
             if self.mensaje:
                 texto_msg = self.fuente.render(self.mensaje, True, (255, 255, 255))
-                self.pantalla.blit(texto_msg, (self.ancho_pantalla//2 - int(200 * self.escala), int(70 * self.escala)))
+                self.pantalla.blit(texto_msg, (ANCHO_PANTALLA//2 - 200, 70))
             
             self.dibujar_pozo()
             self.dibujar_tablero()
@@ -665,16 +623,16 @@ class JuegoPygame:
                     self.ficha_arrastrada,
                     x - self.offset_x,
                     y - self.offset_y,
-                    self.largo_ficha,
-                    self.ancho_ficha,
+                    LARGO_FICHA,
+                    ANCHO_FICHA,
                     arrastrada=True
                 )
             
             for boton in self.botones:
-                boton.dibujar(self.pantalla, self.fuente)
+                boton.dibujar(self.pantalla)
             
-            texto_ayuda = self.fuente.render("G: Girar ficha | ESC: Salir | F: Pantalla completa", True, (150, 150, 150))
-            self.pantalla.blit(texto_ayuda, (int(20 * self.escala), self.alto_pantalla - int(30 * self.escala)))
+            texto_ayuda = self.fuente.render("G: Girar ficha | ESC: Cancelar | Arrastrar para colocar", True, (150, 150, 150))
+            self.pantalla.blit(texto_ayuda, (20, ALTO_PANTALLA - 30))
             
             pygame.display.flip()
             self.clock.tick(60)
