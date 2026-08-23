@@ -7,7 +7,7 @@ from jugador import Jugador
 
 class Partida:
 
-    def __init__(self, archivo_fichas):
+    def __init__(self, archivo_fichas, fichas_por_jugador=6):
 
         # Tablero
         self.tablero = Tablero()
@@ -30,16 +30,17 @@ class Partida:
 
         # Flag: el jugador actual ya robó en este turno?
         self.ya_robo_en_turno = False
-        self.ficha_robada = None  # <--- NUEVO: guardar la ficha robada
+        self.ficha_robada = None
 
         # Reparto inicial
+        self.fichas_por_jugador = fichas_por_jugador
         self.repartir_fichas()
 
 
     def repartir_fichas(self):
-        """Reparte 6 fichas a cada jugador"""
+        """Reparte fichas a cada jugador"""
         for jugador in self.jugadores:
-            for _ in range(6):
+            for _ in range(self.fichas_por_jugador):
                 ficha = self.pozo.sacar()
                 if ficha is not None:
                     jugador.recibir_ficha(ficha)
@@ -54,16 +55,14 @@ class Partida:
         """Cambia al siguiente jugador y resetea el flag de robo"""
         self.turno = (self.turno + 1) % len(self.jugadores)
         self.ya_robo_en_turno = False
-        self.ficha_robada = None  # <--- NUEVO: resetear
+        self.ficha_robada = None
 
 
     def puede_jugar(self, jugador):
         """Verifica si el jugador tiene alguna jugada posible con sus fichas actuales"""
-        # Si no tiene fichas, no puede jugar
         if jugador.cantidad_fichas() == 0:
             return False
         
-        # Primera jugada: siempre puede jugar si tiene fichas
         if self.tablero.primera_jugada:
             return True
         
@@ -71,7 +70,6 @@ class Partida:
         valor_tail = self.tablero.tail_posible.valor
         
         for ficha in jugador.fichas:
-            # Verificar todos los valores de la ficha (O, E, N, S)
             for clave, valor in ficha.valores.items():
                 if valor is not None:
                     if valor == valor_head or valor == valor_tail:
@@ -85,11 +83,9 @@ class Partida:
         if jugador is None:
             jugador = self.jugador_actual()
         
-        # Ya robó en este turno
         if self.ya_robo_en_turno:
             return False
         
-        # Pozo vacío
         if self.pozo.cantidad() == 0:
             return False
         
@@ -113,7 +109,8 @@ class Partida:
         
         jugador.recibir_ficha(ficha)
         self.ya_robo_en_turno = True
-        self.ficha_robada = ficha  # <--- NUEVO: guardar la ficha robada
+        self.ficha_robada = ficha
+        
         return ficha
 
 
@@ -125,14 +122,12 @@ class Partida:
         if jugador is None:
             jugador = self.jugador_actual()
         
-        # Solo se puede pasar si ya se robó en este turno
         if not self.ya_robo_en_turno:
             return False
         
         self.cambiar_turno()
         return True
 
-        
 
     def jugar_ficha(self, ficha, casilla):
         """
@@ -142,11 +137,9 @@ class Partida:
         """
         jugador = self.jugador_actual()
         
-        # La ficha debe estar en la mano del jugador
         if ficha not in jugador.fichas:
             return False
         
-        # Primera jugada
         if self.tablero.primera_jugada:
             colocada = self.tablero.colocar_primera_ficha(ficha, casilla)
         else:
@@ -155,24 +148,17 @@ class Partida:
         if not colocada:
             return False
         
-        # La ficha deja de estar en la mano
         jugador.sacar_ficha(ficha)
         
-        # Verificar si ganó
-        if self.jugador_gano():
+        # --- VERIFICAR GANADOR ---
+        if jugador.cantidad_fichas() == 0:
             self.terminada = True
             self.ganador = jugador
+            return True
         
-        # Cambiar turno (solo si se colocó correctamente)
+        # Si no ganó, cambiar turno
         self.cambiar_turno()
-        
         return True
-
-
-    def jugador_gano(self):
-        """Verifica si el jugador actual ganó (sin fichas)"""
-        jugador = self.jugador_actual()
-        return jugador.cantidad_fichas() == 0
 
 
     def partida_bloqueada(self):
@@ -192,7 +178,6 @@ class Partida:
         j1 = self.jugadores[0]
         j2 = self.jugadores[1]
         
-        # Primero por cantidad de fichas
         if j1.cantidad_fichas() < j2.cantidad_fichas():
             return j1
         elif j2.cantidad_fichas() < j1.cantidad_fichas():
@@ -216,15 +201,37 @@ class Partida:
         elif suma_j2 < suma_j1:
             return j2
         else:
-            return None  # Empate total
+            return None
 
 
-    def mostrar_estado(self):
-        """Muestra el estado actual del juego (para consola)"""
-        print("\n" + "="*60)
-        print(f"TURNO: {self.jugador_actual().nombre}")
-        print(f"Fichas en pozo: {self.pozo.cantidad()}")
-        print(f"Fichas jugadas: {len(self.tablero.fichas_jugadas)}")
-        if self.ya_robo_en_turno:
-            print("📍 Ya robaste en este turno")
-        print("="*60)
+    def verificar_fin_partida(self):
+        """
+        Verifica si la partida debe terminar por bloqueo o pozo vacío.
+        Retorna True si terminó, False si continúa.
+        NOTA: La victoria por quedarse sin fichas ya se maneja en jugar_ficha()
+        """
+        if self.terminada:
+            return True
+        
+        # NO verificar durante la primera jugada
+        if self.tablero.primera_jugada:
+            return False
+        
+        jugador = self.jugador_actual()
+        
+        # Caso 1: El jugador no puede jugar y el pozo está vacío (pierde)
+        if self.pozo.cantidad() == 0 and not self.puede_jugar(jugador):
+            self.terminada = True
+            for j in self.jugadores:
+                if j != jugador:
+                    self.ganador = j
+                    break
+            return True
+        
+        # Caso 2: Ambos jugadores están bloqueados
+        if self.partida_bloqueada():
+            self.terminada = True
+            self.ganador = self.obtener_ganador_por_menos_fichas()
+            return True
+        
+        return False
