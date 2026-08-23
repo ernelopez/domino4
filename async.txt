@@ -1,0 +1,21 @@
+Funcionó:
+
+El archivo se llama main.
+Hay un archivo .toml que indica la librería pygame.
+Se compila con pygodide build .
+Se zipea el build
+
+El main usa asyncio
+
+AL final:
+
+async def main():
+    juego = JuegoPygame()
+    await juego.ejecutar()
+
+if __name__ == "__main__":
+    juego = JuegoPygame()
+    asyncio.run(juego.ejecutar())
+
+La def principal es una clase async, tiene esto después del flip:
+await asyncio.sleep(1 / 60)  # <--- CEDER CONTROL AL NAVEGADOR

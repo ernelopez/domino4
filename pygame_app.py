@@ -53,6 +53,7 @@ class JuegoPygame:
         
         # Crear pantalla completa
         self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
+        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
         pygame.display.set_caption("Dominó de Fracciones - ESC para salir")
         self.clock = pygame.time.Clock()
         
@@ -673,7 +674,7 @@ class JuegoPygame:
                             self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
                             self.actualizar_posiciones_fichas()
                             self.actualizar_botones()
-                    elif evento.key == pygame.K_f:
+                    elif evento.key == pygame.K_f: #TOCADO PARA PyGBAG
                         pygame.display.toggle_fullscreen()
                 
                 elif evento.type == pygame.MOUSEBUTTONDOWN:
