@@ -78,6 +78,10 @@ class JuegoPygame:
         self.mensaje = ""
         self.tiempo_mensaje = 0
         
+        self.mensaje = ""
+        self.tiempo_mensaje = 0
+        self.mensaje_color = (255, 255, 255)
+
         # Posiciones de las fichas en la mano
         self.posiciones_fichas = {
             "jugador1": [],
@@ -90,8 +94,8 @@ class JuegoPygame:
     
     def recalcular_tamanos(self):
         """Recalcula todos los tamaños según la resolución actual"""
-        BASE_ANCHO = 1400
-        BASE_ALTO = 900
+        BASE_ANCHO = 1200
+        BASE_ALTO = 750
         
         self.escala_x = self.ancho_pantalla / BASE_ANCHO
         self.escala_y = self.alto_pantalla / BASE_ALTO
@@ -613,6 +617,44 @@ class JuegoPygame:
         
         return False
     
+    def dibujar_mensajes(self):
+        """Dibuja los mensajes en el centro del tablero"""
+        if not self.mensaje:
+            return
+        
+        # Posición centrada
+        centro_x = self.ancho_pantalla // 2
+        centro_y = int(80 * self.escala)
+        
+        # Fondo semitransparente
+        texto = self.fuente_grande.render(self.mensaje, True, (255, 255, 255))
+        ancho_texto = texto.get_width()
+        alto_texto = texto.get_height()
+        
+        # Fondo
+        s = pygame.Surface((ancho_texto + 40, alto_texto + 20), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 180))
+        self.pantalla.blit(s, (centro_x - ancho_texto//2 - 20, centro_y - alto_texto//2 - 10))
+        
+        # Texto
+        self.pantalla.blit(texto, (centro_x - ancho_texto//2, centro_y - alto_texto//2))
+
+    def dibujar_ayuda(self):
+        """Dibuja las instrucciones en la esquina inferior derecha"""
+        x = self.ancho_pantalla - int(300 * self.escala)
+        y = self.alto_pantalla - int(100 * self.escala)
+        
+        lineas = [
+            "G: Girar ficha",
+            "F: Pantalla completa",
+            "ESC: Salir"
+        ]
+        
+        for i, linea in enumerate(lineas):
+            texto = self.fuente.render(linea, True, (150, 150, 150))
+            self.pantalla.blit(texto, (x, y + i * int(25 * self.escala)))
+
+
     def ejecutar(self):
         """Bucle principal del juego"""
         ejecutando = True
@@ -749,15 +791,8 @@ class JuegoPygame:
             # Dibujar
             self.pantalla.fill(COLOR_FONDO)
             
-            texto_turno = self.fuente_grande.render(
-                f"Turno: {self.partida.jugador_actual().nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
-                True, (255, 255, 255)
-            )
-            self.pantalla.blit(texto_turno, (self.ancho_pantalla//2 - int(100 * self.escala), int(20 * self.escala)))
-            
-            if self.mensaje:
-                texto_msg = self.fuente.render(self.mensaje, True, (255, 255, 255))
-                self.pantalla.blit(texto_msg, (self.ancho_pantalla//2 - int(200 * self.escala), int(70 * self.escala)))
+            # Mensajes (turno y jugadas) dentro del tablero
+            self.dibujar_mensajes()
             
             self.dibujar_pozo()
             self.dibujar_tablero()
@@ -782,8 +817,7 @@ class JuegoPygame:
             for boton in self.botones:
                 boton.dibujar(self.pantalla, self.fuente)
             
-            texto_ayuda = self.fuente.render("G: Girar ficha | ESC: Salir | F: Pantalla completa", True, (150, 150, 150))
-            self.pantalla.blit(texto_ayuda, (int(20 * self.escala), self.alto_pantalla - int(30 * self.escala)))
+            self.dibujar_ayuda()
             
             pygame.display.flip()
             self.clock.tick(60)
