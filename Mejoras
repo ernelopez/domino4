@@ -2,11 +2,12 @@ Mejoras
 
 - *imagen girada: analizar con cuidado
 - *Hay un tema: cuando se arrastra, queda la ficha en el lugar. Si se gira, desaparece.
+- *centrar ficha girada en arrastre
 - esquinas redondeadas: en rect y en imágenes
-- imagen fondo
+- imagen reverso ficha
 - importar tipografía
 - fracciones en dos líneas centradas, barra en la imagen
-- Quitar botón girar (testear en táctil)
+- Quitar botón girar
 - botón de reinicio de partida (cartel de está seguro)
 - Dos botones centrados, dentro del tablero
 - Colores: pasteles

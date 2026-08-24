@@ -2,8 +2,14 @@ Funcionó:
 
 El archivo se llama main.
 Hay un archivo .toml que indica la librería pygame.
-Se compila con pygodide build .
-Se zipea el build
+Se compila con:
+source venv/bin/activate
+pygodide build .
+zip -r domino-web.zip build/
+
+pygodide serve . (para servir localmente)
+
+---
 
 El main usa asyncio
 

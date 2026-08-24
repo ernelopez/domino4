@@ -53,8 +53,8 @@ class JuegoPygame:
         self.alto_pantalla = info.current_h
         
         # Crear pantalla completa
-        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
-        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
+        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
+        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
         pygame.display.set_caption("Dominó de Fracciones - ESC para salir")
         self.clock = pygame.time.Clock()
         
@@ -267,93 +267,6 @@ class JuegoPygame:
             if pos:
                 self.posiciones_fichas["jugador2"].append(pos)
 
-    '''
-    def actualizar_posiciones_fichas(self):
-        """Actualiza las posiciones de las fichas de cada jugador en la pantalla"""
-        self.posiciones_fichas = {
-            "jugador1": [],
-            "jugador2": []
-        }
-        
-        margen = int(30 * self.escala)
-        y_inicial = int(80 * self.escala)
-        max_por_columna = 20
-        
-        # AUMENTAR separación para que se vea más espacio
-        separacion = int(8 * self.escala)  # <--- ANTES era 3, ahora 8
-        separacion_columnas = int(15 * self.escala)  # <--- ANTES era 10, ahora 15
-        
-        # ESPACIO FIJO = alto de la ficha horizontal + separacion
-        espacio_fijo_alto = self.ancho_ficha + separacion
-        espacio_fijo_ancho = self.largo_ficha + separacion + separacion_columnas
-        
-        # Jugador 1: lateral izquierdo
-        for i, ficha in enumerate(self.partida.jugadores[0].fichas):
-            if ficha == self.ficha_arrastrada:
-                continue
-            
-            if ficha.orientacion == "horizontal":
-                ancho = self.largo_ficha
-                alto = self.ancho_ficha
-            else:
-                ancho = self.ancho_ficha
-                alto = self.largo_ficha
-            
-            fila = i % max_por_columna
-            columna = i // max_por_columna
-            
-            x = margen + columna * espacio_fijo_ancho
-            y = y_inicial + fila * espacio_fijo_alto
-            
-            # Centrar la ficha en el espacio
-            if ficha.orientacion == "vertical":
-                # Centrar horizontalmente: (espacio_ancho - ancho_ficha) / 2
-                x = x + (self.largo_ficha - self.ancho_ficha) // 2
-            else:
-                # Centrar verticalmente la horizontal (aunque no hace falta porque coincide)
-                pass
-            
-            self.posiciones_fichas["jugador1"].append({
-                "ficha": ficha,
-                "x": x,
-                "y": y,
-                "ancho": ancho,
-                "alto": alto
-            })
-        
-        # Jugador 2: lateral derecho
-        x = self.ancho_pantalla - margen - self.largo_ficha
-        y_inicial = int(80 * self.escala)
-        
-        for i, ficha in enumerate(self.partida.jugadores[1].fichas):
-            if ficha == self.ficha_arrastrada:
-                continue
-            
-            if ficha.orientacion == "horizontal":
-                ancho = self.largo_ficha
-                alto = self.ancho_ficha
-            else:
-                ancho = self.ancho_ficha
-                alto = self.largo_ficha
-            
-            fila = i % max_por_columna
-            columna = i // max_por_columna
-            
-            x_pos = x - columna * espacio_fijo_ancho
-            y_pos = y_inicial + fila * espacio_fijo_alto
-            
-            # Centrar la ficha en el espacio
-            if ficha.orientacion == "vertical":
-                x_pos = x_pos + (self.largo_ficha - self.ancho_ficha) // 2
-            
-            self.posiciones_fichas["jugador2"].append({
-                "ficha": ficha,
-                "x": x_pos,
-                "y": y_pos,
-                "ancho": ancho,
-                "alto": alto
-            }) '''
-
     
     def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
         """Dibuja los valores de la ficha encima de la imagen de fondo"""
@@ -470,36 +383,39 @@ class JuegoPygame:
             self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
             return
 
-    '''
-    def dibujar_ficha_mano(self, ficha, x, y, seleccionada=False):
+    def dibujar_ficha_arrastrada(self, ficha, x, y):
         """
-        Dibuja una ficha en la mano de un jugador.
-        Calcula el tamaño automáticamente según orientación.
+        Dibuja la ficha que se está arrastrando, siguiendo al mouse.
         """
         if ficha.orientacion == "horizontal":
             ancho = self.largo_ficha
             alto = self.ancho_ficha
+            dx = 0
+            dy = 0
         else:
             ancho = self.ancho_ficha
             alto = self.largo_ficha
+            # Centrar la ficha vertical en el espacio que ocuparía una horizontal
+            dx = (self.largo_ficha - self.ancho_ficha) // 2
+            dy = (self.ancho_ficha - self.largo_ficha) // 2
         
         if self.img_frente is not None:
-            if ficha.orientacion == "vertical" :
+            if ficha.orientacion == "vertical":
                 img = self.img_frente_v
-            else :
+            else:
                 img = self.img_frente
 
-            self.pantalla.blit(img, (x, y))
-
-            if seleccionada:
-                pygame.draw.rect(self.pantalla, (100, 200, 255), (x, y, ancho, alto), 
-                               max(2, int(4 * self.escala)), border_radius=5)
+            self.pantalla.blit(img, (x + dx, y + dy))
             
-            self.dibujar_valores_ficha(ficha, x, y, ancho, alto)
+            # Borde verde para arrastre
+            pygame.draw.rect(self.pantalla, (200, 255, 200), (x + dx, y + dy, ancho, alto), 
+                           max(2, int(4 * self.escala)), border_radius=5)
+            
+            self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
             return
         
         # Fallback sin imágenes
-        color = (200, 200, 255) if seleccionada else (240, 240, 240)
+        color = (200, 255, 200)
         pygame.draw.rect(self.pantalla, color, (x, y, ancho, alto), border_radius=5)
         pygame.draw.rect(self.pantalla, (100, 100, 100), (x, y, ancho, alto), 2, border_radius=5)
         
@@ -569,7 +485,8 @@ class JuegoPygame:
             texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
             self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
             self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
-    
+    '''
+
     # ============================================================
     # DIBUJO DE TABLERO, POZO Y OTROS
     # ============================================================
@@ -988,7 +905,7 @@ class JuegoPygame:
             await asyncio.sleep(1 / 60)
         
         pygame.quit()
-        sys.exit()
+        return
 '''
     async def ejecutar(self):
         """Bucle principal del juego"""
