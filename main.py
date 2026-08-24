@@ -53,8 +53,8 @@ class JuegoPygame:
         self.alto_pantalla = info.current_h
         
         # Crear pantalla completa
-        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
-        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
+        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
+        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
         pygame.display.set_caption("Dominó de Fracciones - ESC para salir")
         self.clock = pygame.time.Clock()
         
@@ -74,6 +74,9 @@ class JuegoPygame:
         self.ficha_seleccionada = None
         self.ficha_arrastrada = None
         self.ficha_robada_actual = None
+        self.ficha_clickeada = None  # <--- NUEVO
+        self.pos_click_x = 0         # <--- NUEVO
+        self.pos_click_y = 0         # <--- NUEVO
         self.offset_x = 0
         self.offset_y = 0
         self.casillas_destacadas = []
@@ -126,18 +129,22 @@ class JuegoPygame:
             assets_dir = os.path.join(script_dir, "assets")
             
             ruta_frente = os.path.join(assets_dir, "ficha.png")
+            ruta_frente_v = os.path.join(assets_dir, "ficha_vertical.png")
             ruta_dorso = os.path.join(assets_dir, "dorso.png")
             
             self.img_frente = pygame.image.load(ruta_frente)
+            self.img_frente_v = pygame.image.load(ruta_frente_v)
             self.img_dorso = pygame.image.load(ruta_dorso)
             
             self.img_frente = pygame.transform.scale(self.img_frente, (self.largo_ficha, self.ancho_ficha))
+            self.img_frente_v = pygame.transform.scale(self.img_frente_v, (self.ancho_ficha, self.largo_ficha))
             self.img_dorso = pygame.transform.scale(self.img_dorso, (self.largo_ficha, self.ancho_ficha))
             
             print("✅ Imágenes cargadas correctamente")
         except Exception as e:
             print(f"⚠️ Error cargando imágenes: {e}")
             self.img_frente = None
+            self.img_frente_v = None
             self.img_dorso = None
     
     def calcular_offset_tablero(self):
@@ -204,10 +211,81 @@ class JuegoPygame:
         }
         
         margen = int(30 * self.escala)
-        y_inicial = int(150 * self.escala)
-        max_por_columna = 15
-        separacion = int(10 * self.escala)
-        separacion_columnas = int(20 * self.escala)
+        y_inicial = int(80 * self.escala)
+        max_por_columna = 20
+        separacion = int(8 * self.escala)
+        separacion_columnas = int(15 * self.escala)
+        
+        # ESPACIO FIJO
+        espacio_fijo_alto = self.ancho_ficha + separacion
+        espacio_fijo_ancho = self.largo_ficha + separacion + separacion_columnas
+        
+        def calcular_posicion_ficha(ficha, i, x_base, direccion):
+            """Calcula la posición de una ficha, centrándola si es vertical"""
+            if ficha == self.ficha_arrastrada:
+                return None
+            
+            if ficha.orientacion == "horizontal":
+                ancho = self.largo_ficha
+                alto = self.ancho_ficha
+            else:
+                ancho = self.ancho_ficha
+                alto = self.largo_ficha
+            
+            fila = i % max_por_columna
+            columna = i // max_por_columna
+            
+            if direccion == "izquierda":
+                x = x_base + columna * espacio_fijo_ancho
+            else:
+                x = x_base - columna * espacio_fijo_ancho
+            
+            y = y_inicial + fila * espacio_fijo_alto
+            
+            # Centrar si es vertical
+            if ficha.orientacion == "vertical":
+                x = x + (self.largo_ficha - self.ancho_ficha) // 2
+            
+            return {
+                "ficha": ficha,
+                "x": x,
+                "y": y,
+                "ancho": ancho,
+                "alto": alto
+            }
+        
+        # Jugador 1
+        for i, ficha in enumerate(self.partida.jugadores[0].fichas):
+            pos = calcular_posicion_ficha(ficha, i, margen, "izquierda")
+            if pos:
+                self.posiciones_fichas["jugador1"].append(pos)
+        
+        # Jugador 2
+        x_derecha = self.ancho_pantalla - margen - self.largo_ficha
+        for i, ficha in enumerate(self.partida.jugadores[1].fichas):
+            pos = calcular_posicion_ficha(ficha, i, x_derecha, "derecha")
+            if pos:
+                self.posiciones_fichas["jugador2"].append(pos)
+
+    '''
+    def actualizar_posiciones_fichas(self):
+        """Actualiza las posiciones de las fichas de cada jugador en la pantalla"""
+        self.posiciones_fichas = {
+            "jugador1": [],
+            "jugador2": []
+        }
+        
+        margen = int(30 * self.escala)
+        y_inicial = int(80 * self.escala)
+        max_por_columna = 20
+        
+        # AUMENTAR separación para que se vea más espacio
+        separacion = int(8 * self.escala)  # <--- ANTES era 3, ahora 8
+        separacion_columnas = int(15 * self.escala)  # <--- ANTES era 10, ahora 15
+        
+        # ESPACIO FIJO = alto de la ficha horizontal + separacion
+        espacio_fijo_alto = self.ancho_ficha + separacion
+        espacio_fijo_ancho = self.largo_ficha + separacion + separacion_columnas
         
         # Jugador 1: lateral izquierdo
         for i, ficha in enumerate(self.partida.jugadores[0].fichas):
@@ -224,17 +302,28 @@ class JuegoPygame:
             fila = i % max_por_columna
             columna = i // max_por_columna
             
+            x = margen + columna * espacio_fijo_ancho
+            y = y_inicial + fila * espacio_fijo_alto
+            
+            # Centrar la ficha en el espacio
+            if ficha.orientacion == "vertical":
+                # Centrar horizontalmente: (espacio_ancho - ancho_ficha) / 2
+                x = x + (self.largo_ficha - self.ancho_ficha) // 2
+            else:
+                # Centrar verticalmente la horizontal (aunque no hace falta porque coincide)
+                pass
+            
             self.posiciones_fichas["jugador1"].append({
                 "ficha": ficha,
-                "x": margen + columna * (ancho + separacion + separacion_columnas),
-                "y": y_inicial + fila * (alto + separacion),
+                "x": x,
+                "y": y,
                 "ancho": ancho,
                 "alto": alto
             })
         
         # Jugador 2: lateral derecho
         x = self.ancho_pantalla - margen - self.largo_ficha
-        y_inicial = int(150 * self.escala)
+        y_inicial = int(80 * self.escala)
         
         for i, ficha in enumerate(self.partida.jugadores[1].fichas):
             if ficha == self.ficha_arrastrada:
@@ -250,13 +339,21 @@ class JuegoPygame:
             fila = i % max_por_columna
             columna = i // max_por_columna
             
+            x_pos = x - columna * espacio_fijo_ancho
+            y_pos = y_inicial + fila * espacio_fijo_alto
+            
+            # Centrar la ficha en el espacio
+            if ficha.orientacion == "vertical":
+                x_pos = x_pos + (self.largo_ficha - self.ancho_ficha) // 2
+            
             self.posiciones_fichas["jugador2"].append({
                 "ficha": ficha,
-                "x": x - columna * (ancho + separacion + separacion_columnas),
-                "y": y_inicial + fila * (alto + separacion),
+                "x": x_pos,
+                "y": y_pos,
                 "ancho": ancho,
                 "alto": alto
-            })
+            }) '''
+
     
     def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
         """Dibuja los valores de la ficha encima de la imagen de fondo"""
@@ -338,6 +435,42 @@ class JuegoPygame:
         pygame.draw.rect(self.pantalla, (100, 100, 100), (x, y, ancho, alto), border_radius=5)
         pygame.draw.rect(self.pantalla, (50, 50, 50), (x, y, ancho, alto), 2, border_radius=5)
     
+
+    def dibujar_ficha_mano(self, ficha, x, y, seleccionada=False):
+        if ficha.orientacion == "horizontal":
+            ancho = self.largo_ficha
+            alto = self.ancho_ficha
+            # Posición sin desplazar
+            dx = 0
+            dy = 0
+        else:
+            ancho = self.ancho_ficha
+            alto = self.largo_ficha
+            # Desplazar para centrar la ficha vertical en el espacio de la horizontal
+            # La ficha horizontal ocupaba LARGO_FICHA x ANCHO_FICHA
+            # La ficha vertical ocupa ANCHO_FICHA x LARGO_FICHA
+            # Para centrarla, hay que desplazarla:
+            #   - En X: (LARGO_FICHA - ANCHO_FICHA) / 2
+            #   - En Y: (ANCHO_FICHA - LARGO_FICHA) / 2 (negativo, sube)
+            dx = 0
+            dy = (self.ancho_ficha - self.largo_ficha) // 2
+        
+        if self.img_frente is not None:
+            if ficha.orientacion == "vertical" :
+                img = self.img_frente_v
+            else :
+                img = self.img_frente
+
+            self.pantalla.blit(img, (x + dx, y + dy))
+            
+            if seleccionada:
+                pygame.draw.rect(self.pantalla, (100, 200, 255), (x + dx, y + dy, ancho, alto), 
+                               max(2, int(4 * self.escala)), border_radius=5)
+            
+            self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
+            return
+
+    '''
     def dibujar_ficha_mano(self, ficha, x, y, seleccionada=False):
         """
         Dibuja una ficha en la mano de un jugador.
@@ -351,16 +484,13 @@ class JuegoPygame:
             alto = self.largo_ficha
         
         if self.img_frente is not None:
-            img = pygame.transform.scale(self.img_frente, (ancho, alto))
-            
-            if ficha.orientacion == "vertical":
-                img = pygame.transform.rotate(img, 90)
-                offset_x = (ancho - img.get_width()) // 2
-                offset_y = (alto - img.get_height()) // 2
-                self.pantalla.blit(img, (x + offset_x, y + offset_y))
-            else:
-                self.pantalla.blit(img, (x, y))
-            
+            if ficha.orientacion == "vertical" :
+                img = self.img_frente_v
+            else :
+                img = self.img_frente
+
+            self.pantalla.blit(img, (x, y))
+
             if seleccionada:
                 pygame.draw.rect(self.pantalla, (100, 200, 255), (x, y, ancho, alto), 
                                max(2, int(4 * self.escala)), border_radius=5)
@@ -390,7 +520,7 @@ class JuegoPygame:
             texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
             self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
             self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
-    
+    '''
     def dibujar_ficha_arrastrada(self, ficha, x, y):
         """
         Dibuja la ficha que se está arrastrando, siguiendo al mouse.
@@ -403,15 +533,12 @@ class JuegoPygame:
             alto = self.largo_ficha
         
         if self.img_frente is not None:
-            img = pygame.transform.scale(self.img_frente, (ancho, alto))
-            
             if ficha.orientacion == "vertical":
-                img = pygame.transform.rotate(img, 90)
-                offset_x = (ancho - img.get_width()) // 2
-                offset_y = (alto - img.get_height()) // 2
-                self.pantalla.blit(img, (x + offset_x, y + offset_y))
-            else:
-                self.pantalla.blit(img, (x, y))
+                img = self.img_frente_v
+            else :
+                img = self.img_frente
+
+            self.pantalla.blit(img, (x, y))
             
             # Borde verde para arrastre
             pygame.draw.rect(self.pantalla, (200, 255, 200), (x, y, ancho, alto), 
@@ -656,7 +783,6 @@ class JuegoPygame:
             texto = self.fuente.render(linea, True, (150, 150, 150))
             self.pantalla.blit(texto, (x, y + i * int(25 * self.escala)))
 
-
     async def ejecutar(self):
         """Bucle principal del juego"""
         ejecutando = True
@@ -675,8 +801,215 @@ class JuegoPygame:
                             self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
                             self.actualizar_posiciones_fichas()
                             self.actualizar_botones()
-                    #elif evento.key == pygame.K_f: #TOCADO PARA PyGBAG
-                    #    pygame.display.toggle_fullscreen()
+                
+                elif evento.type == pygame.MOUSEBUTTONDOWN:
+                    if evento.button == 1:
+                        x, y = evento.pos
+                        
+                        # Verificar clic en botones
+                        for boton in self.botones:
+                            if boton.click():
+                                if boton == self.boton_robar:
+                                    if not self.partida.ya_robo_en_turno and not self.partida.terminada:
+                                        ficha = self.partida.robar_ficha()
+                                        if ficha:
+                                            self.ficha_robada_actual = ficha
+                                            self.ficha_seleccionada = ficha
+                                            self.mostrar_mensaje(f"📥 {self.partida.jugador_actual().nombre} robó: {ficha.mostrar_valores()}")
+                                            self.actualizar_posiciones_fichas()
+                                            self.actualizar_botones()
+                                        else:
+                                            self.mostrar_mensaje("❌ No hay fichas en el pozo")
+                                    continue
+                                
+                                elif boton == self.boton_pasar:
+                                    if self.partida.ya_robo_en_turno and not self.partida.terminada:
+                                        self.partida.pasar_turno()
+                                        self.mostrar_mensaje(f"⏭️ {self.partida.jugador_actual().nombre} pasa turno")
+                                        self.ficha_seleccionada = None
+                                        self.ficha_arrastrada = None
+                                        self.ficha_robada_actual = None
+                                        self.casillas_destacadas = []
+                                        self.actualizar_posiciones_fichas()
+                                        self.actualizar_botones()
+                                        self.verificar_y_mostrar_fin_partida()
+                                    continue
+                                
+                                elif boton == self.boton_girar:
+                                    if self.ficha_seleccionada is not None and not self.partida.terminada:
+                                        self.ficha_seleccionada.girar_90()
+                                        self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
+                                        self.actualizar_posiciones_fichas()
+                                    continue
+                        
+                        # Seleccionar ficha con click (sin arrastre todavía)
+                        ficha, jugador = self.obtener_ficha_en_posicion(x, y)
+                        
+                        if ficha is not None and jugador == self.partida.jugador_actual() and not self.partida.terminada:
+                            # Guardar la ficha clickeada y la posición
+                            self.ficha_clickeada = ficha
+                            self.pos_click_x = x
+                            self.pos_click_y = y
+                            
+                            # NO iniciar arrastre todavía
+                            self.ficha_arrastrada = None
+                            self.ficha_seleccionada = ficha
+                
+                elif evento.type == pygame.MOUSEMOTION:
+                    # Si hay una ficha clickeada y se movió el mouse, iniciar arrastre
+                    if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
+                        # Calcular distancia desde el clic
+                        dx = evento.pos[0] - self.pos_click_x
+                        dy = evento.pos[1] - self.pos_click_y
+                        
+                        # Si se movió más de 10 píxeles, iniciar arrastre
+                        if (dx*dx + dy*dy) > 100:  # 10 píxeles al cuadrado
+                            self.ficha_arrastrada = self.ficha_clickeada
+                            self.ficha_clickeada = None  # Ya no es un clic
+                            
+                            # Calcular offset
+                            for pos in self.posiciones_fichas["jugador1"] + self.posiciones_fichas["jugador2"]:
+                                if pos["ficha"] == self.ficha_arrastrada:
+                                    self.offset_x = self.pos_click_x - pos["x"]
+                                    self.offset_y = self.pos_click_y - pos["y"]
+                                    break
+                            
+                            self.actualizar_posiciones_fichas()
+                            self.actualizar_casillas_destacadas(self.ficha_arrastrada, self.partida.jugador_actual())
+                            self.mostrar_mensaje(f"📌 Arrastrando: {self.ficha_arrastrada.mostrar_valores()}")
+                    
+                    # Si ya hay arrastre, actualizar casillas destacadas
+                    if self.ficha_arrastrada is not None and not self.partida.terminada:
+                        self.actualizar_casillas_destacadas(
+                            self.ficha_arrastrada, 
+                            self.partida.jugador_actual()
+                        )
+                
+                elif evento.type == pygame.MOUSEBUTTONUP:
+                    if evento.button == 1:
+                        # Si hay ficha clickeada y no se movió (no hubo arrastre)
+                        if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
+                            # Es un clic → girar la ficha
+                            self.ficha_clickeada.girar_90()
+                            self.offset_x = 0
+                            self.offset_y = 0
+                            self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_clickeada.mostrar_valores()}")
+                            self.actualizar_posiciones_fichas()
+                            self.actualizar_botones()
+                            self.ficha_clickeada = None
+                            self.ficha_seleccionada = None
+                        
+                        # Si hay arrastre, procesar la colocación
+                        elif self.ficha_arrastrada is not None and not self.partida.terminada:
+                            x, y = evento.pos
+                            casilla = self.obtener_casilla_en_posicion(x, y)
+                            
+                            if casilla and casilla.ficha is None:
+                                if self.partida.tablero.primera_jugada:
+                                    if self.ficha_arrastrada.orientacion == casilla.orientacion:
+                                        exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
+                                        if exito:
+                                            self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
+                                            self.ficha_robada_actual = None
+                                            self.actualizar_posiciones_fichas()
+                                            self.actualizar_botones()
+                                            self.verificar_y_mostrar_fin_partida()
+                                        else:
+                                            self.mostrar_mensaje("❌ No se pudo colocar la ficha")
+                                    else:
+                                        self.mostrar_mensaje(f"❌ La ficha es {self.ficha_arrastrada.orientacion} pero la casilla es {casilla.orientacion}")
+                                else:
+                                    head = self.partida.tablero.head_posible.casilla
+                                    tail = self.partida.tablero.tail_posible.casilla
+                                    
+                                    if casilla.numero == head.numero or casilla.numero == tail.numero:
+                                        posible, _ = self.partida.tablero.puede_colocar(self.ficha_arrastrada, casilla)
+                                        if posible:
+                                            exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
+                                            if exito:
+                                                self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
+                                                self.ficha_robada_actual = None
+                                                self.actualizar_posiciones_fichas()
+                                                self.actualizar_botones()
+                                                self.verificar_y_mostrar_fin_partida()
+                                            else:
+                                                self.mostrar_mensaje("❌ No se pudo colocar la ficha")
+                                        else:
+                                            self.mostrar_mensaje("❌ La ficha no encaja en ese extremo")
+                                    else:
+                                        self.mostrar_mensaje("❌ Solo se puede colocar en HEAD o TAIL")
+                            else:
+                                if casilla and casilla.ficha is not None:
+                                    self.mostrar_mensaje("❌ Esa casilla ya está ocupada")
+                                else:
+                                    self.mostrar_mensaje("❌ Soltar en una casilla")
+                            
+                            self.ficha_arrastrada = None
+                            self.ficha_seleccionada = None
+                            self.casillas_destacadas = []
+                            self.actualizar_posiciones_fichas()
+                            self.actualizar_botones()
+                        
+                        # Limpiar estado de clic
+                        self.ficha_clickeada = None
+            
+            # Dibujar
+            self.pantalla.fill(COLOR_FONDO)
+            
+            # Mensajes (turno y jugadas) dentro del tablero
+            self.dibujar_mensajes()
+            
+            self.dibujar_pozo()
+            self.dibujar_tablero()
+            
+            for jugador_id, posiciones in self.posiciones_fichas.items():
+                for pos in posiciones:
+                    es_seleccionada = pos["ficha"] == self.ficha_seleccionada and pos["ficha"] != self.ficha_arrastrada
+                    self.dibujar_ficha_mano(
+                        pos["ficha"],
+                        pos["x"], pos["y"],
+                        seleccionada=es_seleccionada
+                    )
+            
+            if self.ficha_arrastrada is not None:
+                x, y = pygame.mouse.get_pos()
+                self.dibujar_ficha_arrastrada(
+                    self.ficha_arrastrada,
+                    x - self.offset_x,
+                    y - self.offset_y
+                )
+            
+            for boton in self.botones:
+                boton.dibujar(self.pantalla, self.fuente)
+            
+            self.dibujar_ayuda()
+            
+            pygame.display.flip()
+            await asyncio.sleep(1 / 60)
+        
+        pygame.quit()
+        sys.exit()
+'''
+    async def ejecutar(self):
+        """Bucle principal del juego"""
+        ejecutando = True
+        
+        while ejecutando:
+            for evento in pygame.event.get():
+                if evento.type == pygame.QUIT:
+                    ejecutando = False
+                
+                elif evento.type == pygame.KEYDOWN:
+                    if evento.key == pygame.K_ESCAPE:
+                        ejecutando = False
+                    elif evento.key == pygame.K_g:
+                        if self.ficha_seleccionada is not None and not self.partida.terminada:
+                            self.ficha_seleccionada.girar_90()
+                            self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
+                            self.actualizar_posiciones_fichas()
+                            self.actualizar_botones()
+                    elif evento.key == pygame.K_f: #TECLA F TOCADO PARA PyGBAG, VER SI CAMBIAR
+                        pygame.display.toggle_fullscreen()
                 
                 elif evento.type == pygame.MOUSEBUTTONDOWN:
                     if evento.button == 1:
@@ -728,7 +1061,7 @@ class JuegoPygame:
                                     self.offset_x = x - pos["x"]
                                     self.offset_y = y - pos["y"]
                                     break
-                            
+                            self.actualizar_posiciones_fichas()
                             self.mostrar_mensaje(f"📌 Seleccionada: {ficha.mostrar_valores()}")
                             self.actualizar_botones()
                 
@@ -826,7 +1159,7 @@ class JuegoPygame:
             #self.clock.tick(60)
         
         pygame.quit()
-        sys.exit()
+        sys.exit()'''
 
 
 async def main():
