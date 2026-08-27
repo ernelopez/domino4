@@ -122,6 +122,8 @@ class JuegoPygame:
         # Crear botones
         self.crear_botones()
     
+
+
     def recalcular_tamanos(self):
         """Recalcula todos los tamaños según la resolución actual"""
         BASE_ANCHO = 1200
@@ -204,7 +206,46 @@ class JuegoPygame:
             self.img_boton_pasar = None
             self.img_boton_reset = None
             self.img_boton_ayuda = None
+
+    def calcular_offset_tablero(self):
+        """Calcula el offset para centrar el tablero en la pantalla"""
+        # Offset fijo para centrar visualmente
+        # Si el tablero está corrido 50 píxeles a la izquierda, sumamos 50 al offset
+        # Ajustá este valor hasta que quede centrado
+        
+        # Calculamos el offset base con el centro geométrico
+        min_x = float('inf')
+        max_x = float('-inf')
+        min_y = float('inf')
+        max_y = float('-inf')
+        
+        for casilla in self.partida.tablero.casillas:
+            if casilla.x < min_x:
+                min_x = casilla.x
+            if casilla.x + LARGO_FICHA > max_x:
+                max_x = casilla.x + LARGO_FICHA
+            if casilla.y < min_y:
+                min_y = casilla.y
+            if casilla.y + ANCHO_FICHA > max_y:
+                max_y = casilla.y + ANCHO_FICHA
+        
+        centro_x = (min_x + max_x) // 2
+        centro_y = (min_y + max_y) // 2
+        
+        # Offset base
+        base_offset_x = self.ancho_pantalla // 2 - int(centro_x * self.escala)
+        base_offset_y = self.alto_pantalla // 2 - int(centro_y * self.escala)
+        
+        # Ajuste manual (cambiá estos valores hasta que quede centrado)
+        ajuste_x = 40   # <--- Probá con 20, 40, 60, -20, -40
+        ajuste_y = 0
+        
+        self.offset_tablero_x = base_offset_x + ajuste_x
+        self.offset_tablero_y = base_offset_y + ajuste_y
+        
+        print(f"base_offset_x={base_offset_x}, ajuste_x={ajuste_x}, offset_x={self.offset_tablero_x}")
     
+    '''
     def calcular_offset_tablero(self):
         """Calcula el offset para centrar el tablero en la pantalla"""
         min_x = float('inf')
@@ -231,6 +272,19 @@ class JuegoPygame:
         self.offset_tablero_x = self.ancho_pantalla // 2 - int(centro_tablero_x * self.escala)
         self.offset_tablero_y = self.alto_pantalla // 2 - int(centro_tablero_y * self.escala)
     
+        #============================================
+        # DEBUG - Agregar estos prints
+        # ============================================
+        print(f"min_x={min_x}, max_x={max_x}, centro_tablero_x={centro_tablero_x}")
+        print(f"ancho_pantalla={self.ancho_pantalla}, centro_pantalla={self.ancho_pantalla // 2}")
+        print(f"escala={self.escala}")
+        
+        self.offset_tablero_x = self.ancho_pantalla // 2 - int(centro_tablero_x * self.escala)
+        self.offset_tablero_y = self.alto_pantalla // 2 - int(centro_tablero_y * self.escala)
+        
+        print(f"offset_tablero_x={self.offset_tablero_x}, offset_tablero_y={self.offset_tablero_y}")
+        # ============================================
+'''
     def crear_botones(self):
         """Crea los botones de la interfaz"""
         self.botones = []
