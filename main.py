@@ -19,24 +19,36 @@ archivofuente = 'junegull.ttf'
 #archivofuente = 'Ubuntu-Title.ttf'
 
 class Boton:
-    def __init__(self, x, y, ancho, alto, texto, color=COLOR_BOTON, color_hover=COLOR_BOTON_HOVER):
+    def __init__(self, x, y, ancho, alto, texto, imagen=None, color=COLOR_BOTON, color_hover=COLOR_BOTON_HOVER):
         self.rect = pygame.Rect(x, y, ancho, alto)
         self.texto = texto
+        self.imagen = imagen  # <--- Imagen del botón
         self.color = color
         self.color_hover = color_hover
         self.activo = True
-        self.fuente = None  # Se asignará después
+        self.fuente = None
     
     def dibujar(self, pantalla, fuente):
-        color = self.color_hover if self.esta_sobre() and self.activo else self.color
-        pygame.draw.rect(pantalla, color, self.rect, border_radius=8)
-        pygame.draw.rect(pantalla, (150, 150, 150), self.rect, 2, border_radius=8)
-        
-        if self.activo:
-            texto = fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
+        # Si hay imagen, dibujarla
+        if self.imagen is not None:
+            img = pygame.transform.scale(self.imagen, (self.rect.width, self.rect.height))
+            pantalla.blit(img, (self.rect.x, self.rect.y))
         else:
-            texto = fuente.render(self.texto, True, (100, 100, 100))
-        pantalla.blit(texto, (self.rect.x + 10, self.rect.y + 8))
+            # Fallback: dibujar rectángulo
+            color = self.color_hover if self.esta_sobre() and self.activo else self.color
+            pygame.draw.rect(pantalla, color, self.rect, border_radius=8)
+            pygame.draw.rect(pantalla, (150, 150, 150), self.rect, 2, border_radius=8)
+        
+        # Texto del botón (si tiene)
+        if self.texto:
+            if self.activo:
+                texto_surface = fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
+            else:
+                texto_surface = fuente.render(self.texto, True, (100, 100, 100))
+            
+            # Centrar el texto en el rectángulo del botón
+            texto_rect = texto_surface.get_rect(center=self.rect.center)
+            pantalla.blit(texto_surface, texto_rect)
     
     def esta_sobre(self):
         return self.rect.collidepoint(pygame.mouse.get_pos())
@@ -147,6 +159,7 @@ class JuegoPygame:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             assets_dir = os.path.join(script_dir, "assets")
             
+            # Fichas
             ruta_frente = os.path.join(assets_dir, "ficha.png")
             ruta_frente_v = os.path.join(assets_dir, "ficha_vertical.png")
             ruta_dorso = os.path.join(assets_dir, "dorso.png")
@@ -159,12 +172,21 @@ class JuegoPygame:
             self.img_frente_v = pygame.transform.scale(self.img_frente_v, (self.ancho_ficha, self.largo_ficha))
             self.img_dorso = pygame.transform.scale(self.img_dorso, (self.largo_ficha, self.ancho_ficha))
             
+            # Botones
+            ruta_boton_robar = os.path.join(assets_dir, "boton_robar.png")
+            ruta_boton_pasar = os.path.join(assets_dir, "boton_pasar.png")
+            
+            self.img_boton_robar = pygame.image.load(ruta_boton_robar)
+            self.img_boton_pasar = pygame.image.load(ruta_boton_pasar)
+            
             print("✅ Imágenes cargadas correctamente")
         except Exception as e:
             print(f"⚠️ Error cargando imágenes: {e}")
             self.img_frente = None
             self.img_frente_v = None
             self.img_dorso = None
+            self.img_boton_robar = None
+            self.img_boton_pasar = None
     
     def calcular_offset_tablero(self):
         """Calcula el offset para centrar el tablero en la pantalla"""
@@ -196,20 +218,34 @@ class JuegoPygame:
         """Crea los botones de la interfaz"""
         self.botones = []
         
-        alto_boton = int(40 * self.escala)
-        ancho_boton = int(150 * self.escala)
+        alto_boton = int(50 * self.escala)
+        ancho_boton = int(200 * self.escala)
         separacion = int(20 * self.escala)
-        margen = int(20 * self.escala)
-        y_boton = self.alto_pantalla - alto_boton - margen
         
-        self.boton_robar = Boton(margen, y_boton, ancho_boton, alto_boton, "📥 Robar del pozo")
+        centro_x = self.ancho_pantalla // 2
+        y_boton = self.alto_pantalla // 2 + int(200 * self.escala) #Altura del botón
+        
+        # Botón Robar con imagen
+        self.boton_robar = Boton(
+            centro_x - ancho_boton - separacion//2, 
+            y_boton, 
+            ancho_boton, 
+            alto_boton, 
+            "Robar del pozo",  # <--- Texto (opcional, puede ser "")
+            self.img_boton_robar  # <--- Imagen
+        )
         self.botones.append(self.boton_robar)
         
-        self.boton_pasar = Boton(margen + ancho_boton + separacion, y_boton, ancho_boton, alto_boton, "⏭️ Pasar turno")
+        # Botón Pasar con imagen
+        self.boton_pasar = Boton(
+            centro_x + separacion//2, 
+            y_boton, 
+            ancho_boton, 
+            alto_boton, 
+            "Pasar turno",  # <--- Texto (opcional, puede ser "")
+            self.img_boton_pasar  # <--- Imagen
+        )
         self.botones.append(self.boton_pasar)
-        
-        self.boton_girar = Boton(margen + 2 * (ancho_boton + separacion), y_boton, ancho_boton, alto_boton, "🔄 Girar")
-        self.botones.append(self.boton_girar)
     
     def actualizar_botones(self):
         """Actualiza qué botones están activos según el estado del juego"""
@@ -220,7 +256,7 @@ class JuegoPygame:
         
         self.boton_robar.activo = not ya_robo and puede_robar and not partida.terminada
         self.boton_pasar.activo = ya_robo and not partida.terminada
-        self.boton_girar.activo = self.ficha_seleccionada is not None and not partida.terminada
+        #self.boton_girar.activo = self.ficha_seleccionada is not None and not partida.terminada
     
     def actualizar_posiciones_fichas(self):
         """Actualiza las posiciones de las fichas de cada jugador en la pantalla"""
@@ -838,11 +874,7 @@ class JuegoPygame:
         x = self.ancho_pantalla - int(300 * self.escala)
         y = self.alto_pantalla - int(100 * self.escala)
         
-        lineas = [
-            "G: Girar ficha",
-            "F: Pantalla completa",
-            "ESC: Salir"
-        ]
+        lineas = ["ESC: Salir"]
         
         for i, linea in enumerate(lineas):
             texto = self.fuente.render(linea, True, (150, 150, 150))
@@ -900,12 +932,12 @@ class JuegoPygame:
                                         self.verificar_y_mostrar_fin_partida()
                                     continue
                                 
-                                elif boton == self.boton_girar:
-                                    if self.ficha_seleccionada is not None and not self.partida.terminada:
-                                        self.ficha_seleccionada.girar_90()
-                                        self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
-                                        self.actualizar_posiciones_fichas()
-                                    continue
+                                #elif boton == self.boton_girar:
+                                #    if self.ficha_seleccionada is not None and not self.partida.terminada:
+                                #        self.ficha_seleccionada.girar_90()
+                                #        self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
+                                #        self.actualizar_posiciones_fichas()
+                                #    continue
                         
                         # Seleccionar ficha con click (sin arrastre todavía)
                         ficha, jugador = self.obtener_ficha_en_posicion(x, y)

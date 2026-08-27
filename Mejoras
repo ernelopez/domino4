@@ -3,11 +3,12 @@ Mejoras
 - *imagen girada: analizar con cuidado
 - *Hay un tema: cuando se arrastra, queda la ficha en el lugar. Si se gira, desaparece.
 - *centrar ficha girada en arrastre
-- fracciones en dos líneas centradas, barra en la imagen
-- importar tipografía
-- Quitar botón girar
+- *fracciones en dos líneas centradas
+- *importar tipografía
+- *Quitar botón girar
+- *Dos botones centrados, dentro del tablero, asset botones
 - botón de reinicio de partida (cartel de está seguro)
-- Dos botones centrados, dentro del tablero, asset botones
+- dibujar_ayuda
 - Dejar mensajes: quién juega, ganador / sacar otros mensajes
 - esquinas redondeadas: en rect y en imágenes
 - imagen reverso ficha
