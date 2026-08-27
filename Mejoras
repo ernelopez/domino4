@@ -9,6 +9,7 @@ Mejoras
 - *Dos botones centrados, dentro del tablero, asset botones
 - botón de reinicio de partida (cartel de está seguro)
 - dibujar_ayuda
+- Título del juego
 - Dejar mensajes: quién juega, ganador / sacar otros mensajes
 - esquinas redondeadas: en rect y en imágenes
 - imagen reverso ficha

@@ -18,6 +18,7 @@ COLOR_CASILLA_DESTACADA = (50, 200, 50)
 archivofuente = 'junegull.ttf'
 #archivofuente = 'Ubuntu-Title.ttf'
 
+
 class Boton:
     def __init__(self, x, y, ancho, alto, texto, imagen=None, color=COLOR_BOTON, color_hover=COLOR_BOTON_HOVER):
         self.rect = pygame.Rect(x, y, ancho, alto)
@@ -48,8 +49,36 @@ class Boton:
             
             # Centrar el texto en el rectángulo del botón
             texto_rect = texto_surface.get_rect(center=self.rect.center)
+            
+            # Si es el botón de reinicio, ajustar verticalmente
+            if "Reiniciar" in self.texto or "Ayuda" in self.texto:
+                texto_rect.y -= 5
+                texto_rect.x -= 5  # <--- Ajustá este valor (2, 3, 4, 5) hasta que quede bien
+            
             pantalla.blit(texto_surface, texto_rect)
-    
+    '''
+    def dibujar(self, pantalla, fuente):
+        # Si hay imagen, dibujarla
+        if self.imagen is not None:
+            img = pygame.transform.scale(self.imagen, (self.rect.width, self.rect.height))
+            pantalla.blit(img, (self.rect.x, self.rect.y))
+        else:
+            # Fallback: dibujar rectángulo
+            color = self.color_hover if self.esta_sobre() and self.activo else self.color
+            pygame.draw.rect(pantalla, color, self.rect, border_radius=8)
+            pygame.draw.rect(pantalla, (150, 150, 150), self.rect, 2, border_radius=8)
+        
+        # Texto del botón (si tiene)
+        if self.texto:
+            if self.activo:
+                texto_surface = fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
+            else:
+                texto_surface = fuente.render(self.texto, True, (100, 100, 100))
+            
+            # Centrar el texto en el rectángulo del botón
+            texto_rect = texto_surface.get_rect(center=self.rect.center)
+            pantalla.blit(texto_surface, texto_rect)
+    '''
     def esta_sobre(self):
         return self.rect.collidepoint(pygame.mouse.get_pos())
     
@@ -101,6 +130,9 @@ class JuegoPygame:
         self.tiempo_mensaje = 0
         self.mensaje_color = (255, 255, 255)
 
+        self.mostrar_confirmacion_reinicio = False
+        self.mensaje_confirmacion = ""
+        
         # Posiciones de las fichas en la mano
         self.posiciones_fichas = {
             "jugador1": [],
@@ -175,10 +207,12 @@ class JuegoPygame:
             # Botones
             ruta_boton_robar = os.path.join(assets_dir, "boton_robar.png")
             ruta_boton_pasar = os.path.join(assets_dir, "boton_pasar.png")
+            ruta_boton_reset = os.path.join(assets_dir, "boton_reset.png")
             
             self.img_boton_robar = pygame.image.load(ruta_boton_robar)
             self.img_boton_pasar = pygame.image.load(ruta_boton_pasar)
-            
+            self.img_boton_reset = pygame.image.load(ruta_boton_reset)
+
             print("✅ Imágenes cargadas correctamente")
         except Exception as e:
             print(f"⚠️ Error cargando imágenes: {e}")
@@ -187,6 +221,7 @@ class JuegoPygame:
             self.img_dorso = None
             self.img_boton_robar = None
             self.img_boton_pasar = None
+            self.img_boton_reset = None
     
     def calcular_offset_tablero(self):
         """Calcula el offset para centrar el tablero en la pantalla"""
@@ -246,6 +281,35 @@ class JuegoPygame:
             self.img_boton_pasar  # <--- Imagen
         )
         self.botones.append(self.boton_pasar)
+
+        x_reiniciar = int(30 * self.escala)
+        y_reiniciar = self.alto_pantalla - int(75 * self.escala)
+        ancho_reiniciar = int(150 * self.escala)
+        alto_reiniciar = int(50 * self.escala)
+        
+        self.boton_reiniciar = Boton(
+            x_reiniciar,
+            y_reiniciar,
+            ancho_reiniciar,
+            alto_reiniciar,
+            "Reiniciar",
+            self.img_boton_reset
+        )
+        self.botones.append(self.boton_reiniciar)
+
+        x_ayuda = self.ancho_pantalla - int(160 * self.escala) - int(30 * self.escala)
+        y_ayuda = self.alto_pantalla - int(50 * self.escala)
+        ancho_ayuda = int(160 * self.escala)
+        alto_ayuda = int(45 * self.escala)
+        
+        self.boton_ayuda = Boton(
+            x_ayuda,
+            y_ayuda,
+            ancho_ayuda,
+            alto_ayuda,
+            "Ayuda"
+        )
+        self.botones.append(self.boton_ayuda)
     
     def actualizar_botones(self):
         """Actualiza qué botones están activos según el estado del juego"""
@@ -256,6 +320,7 @@ class JuegoPygame:
         
         self.boton_robar.activo = not ya_robo and puede_robar and not partida.terminada
         self.boton_pasar.activo = ya_robo and not partida.terminada
+        self.boton_reiniciar.activo = True
         #self.boton_girar.activo = self.ficha_seleccionada is not None and not partida.terminada
     
     def actualizar_posiciones_fichas(self):
@@ -401,83 +466,7 @@ class JuegoPygame:
             dibujar_fraccion(ficha.textos["N"], x + ancho//2, y + alto//4)
             dibujar_fraccion(ficha.textos["S"], x + ancho//2, y + 3 * alto//4)
 
-    '''
-    def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
-        """Dibuja los valores de la ficha en dos líneas centradas como bloque"""
-        # Fondo semitransparente para legibilidad
-        s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
-        s.fill((255, 255, 255, 180))
-        self.pantalla.blit(s, (x, y))
-        
-        # Línea central
-        if ficha.orientacion == "horizontal":
-            pygame.draw.line(self.pantalla, (80, 80, 80), 
-                           (x + ancho//2, y + 5), 
-                           (x + ancho//2, y + alto - 5), 2)
-        else:
-            pygame.draw.line(self.pantalla, (80, 80, 80), 
-                           (x + 5, y + alto//2), 
-                           (x + ancho - 5, y + alto//2), 2)
-        
-        # Función para dibujar fracción en dos líneas centrada como bloque
-        def dibujar_fraccion(texto, x_centro, y_centro):
-            """Dibuja una fracción en dos líneas centradas como bloque"""
-            # Dividir numerador y denominador
-            if "/" in texto:
-                num, den = texto.split("/")
-            else:
-                num = texto
-                den = ""
-            
-            # Renderizar textos
-            texto_num = self.fuente_fraccion.render(num, True, (0, 0, 0)) if num else None
-            texto_den = self.fuente_fraccion.render(den, True, (0, 0, 0)) if den else None
-            
-            # Calcular alto total del bloque
-            alto_num = texto_num.get_height() if texto_num else 0
-            alto_den = texto_den.get_height() if texto_den else 0
-            separacion_entre_lineas = -5
-            alto_total = alto_num + alto_den + separacion_entre_lineas
-            
-            # Calcular posición Y para centrar el bloque
-            y_inicio = y_centro - alto_total // 2
-            
-            # Dibujar numerador (arriba)
-            if texto_num:
-                self.pantalla.blit(texto_num, 
-                    (x_centro - texto_num.get_width() // 2, 
-                     y_inicio))
-            
-            # Dibujar denominador (abajo)
-            if texto_den:
-                y_den = y_inicio + alto_num + separacion_entre_lineas
-                self.pantalla.blit(texto_den, 
-                    (x_centro - texto_den.get_width() // 2, 
-                     y_den))
-        
-        # Dibujar valores según orientación
-        if ficha.orientacion == "horizontal":
-            # Izquierda (O)
-            dibujar_fraccion(ficha.textos["O"], 
-                            x + ancho//4, 
-                            y + alto//2)
-            
-            # Derecha (E)
-            dibujar_fraccion(ficha.textos["E"], 
-                            x + 3 * ancho//4, 
-                            y + alto//2)
-        else:
-            # Arriba (N)
-            dibujar_fraccion(ficha.textos["N"], 
-                            x + ancho//2, 
-                            y + alto//4)
-            
-            # Abajo (S)
-            dibujar_fraccion(ficha.textos["S"], 
-                            x + ancho//2, 
-                            y + 3 * alto//4)
-    '''
-
+    
     # ============================================================
     # FUNCIONES DE DIBUJO DE FICHAS SEGÚN CONTEXTO
     # ============================================================
@@ -620,56 +609,7 @@ class JuegoPygame:
             texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
             self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
             self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
-    '''
-    def dibujar_ficha_arrastrada(self, ficha, x, y):
-        """
-        Dibuja la ficha que se está arrastrando, siguiendo al mouse.
-        """
-        if ficha.orientacion == "horizontal":
-            ancho = self.largo_ficha
-            alto = self.ancho_ficha
-        else:
-            ancho = self.ancho_ficha
-            alto = self.largo_ficha
-        
-        if self.img_frente is not None:
-            if ficha.orientacion == "vertical":
-                img = self.img_frente_v
-            else :
-                img = self.img_frente
-
-            self.pantalla.blit(img, (x, y))
-            
-            # Borde verde para arrastre
-            pygame.draw.rect(self.pantalla, (200, 255, 200), (x, y, ancho, alto), 
-                           max(2, int(4 * self.escala)), border_radius=5)
-            
-            self.dibujar_valores_ficha(ficha, x, y, ancho, alto)
-            return
-        
-        # Fallback sin imágenes
-        color = (200, 255, 200)
-        pygame.draw.rect(self.pantalla, color, (x, y, ancho, alto), border_radius=5)
-        pygame.draw.rect(self.pantalla, (100, 100, 100), (x, y, ancho, alto), 2, border_radius=5)
-        
-        if ficha.orientacion == "horizontal":
-            pygame.draw.line(self.pantalla, (100, 100, 100), 
-                           (x + ancho//2, y + 5), (x + ancho//2, y + alto - 5), 2)
-        else:
-            pygame.draw.line(self.pantalla, (100, 100, 100), 
-                           (x + 5, y + alto//2), (x + ancho - 5, y + alto//2), 2)
-        
-        if ficha.orientacion == "horizontal":
-            texto1 = self.fuente_fraccion.render(ficha.textos["O"].replace("/", "|"), True, (0, 0, 0))
-            texto2 = self.fuente_fraccion.render(ficha.textos["E"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + int(10 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
-            self.pantalla.blit(texto2, (x + ancho - int(30 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
-        else:
-            texto1 = self.fuente_fraccion.render(ficha.textos["N"].replace("/", "|"), True, (0, 0, 0))
-            texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
-            self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
-    '''
+    
 
     # ============================================================
     # DIBUJO DE TABLERO, POZO Y OTROS
@@ -880,6 +820,63 @@ class JuegoPygame:
             texto = self.fuente.render(linea, True, (150, 150, 150))
             self.pantalla.blit(texto, (x, y + i * int(25 * self.escala)))
 
+    def reiniciar_partida(self):
+        """Reinicia la partida"""
+        # Crear una nueva partida
+        self.partida = Partida("fichas.csv", fichas_por_jugador=6)
+        
+        # Resetear estado del juego
+        self.ficha_seleccionada = None
+        self.ficha_arrastrada = None
+        self.ficha_robada_actual = None
+        self.ficha_clickeada = None
+        self.casillas_destacadas = []
+        self.mensaje = ""
+        self.tiempo_mensaje = 0
+        self.offset_x = 0
+        self.offset_y = 0
+        
+        # Recalcular offset del tablero
+        self.calcular_offset_tablero()
+        
+        # Actualizar posiciones de las fichas
+        self.actualizar_posiciones_fichas()
+        
+        # Actualizar botones
+        self.actualizar_botones()
+        
+        self.mostrar_mensaje("Partida reiniciada")
+
+
+    def dibujar_confirmacion_reinicio(self):
+        """Dibuja el cartel de confirmación de reinicio"""
+        if not self.mostrar_confirmacion_reinicio:
+            return
+        
+        # Fondo oscuro semitransparente
+        s = pygame.Surface((self.ancho_pantalla, self.alto_pantalla), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 180))
+        self.pantalla.blit(s, (0, 0))
+        
+        # Cartel
+        ancho_cartel = int(400 * self.escala)
+        alto_cartel = int(150 * self.escala)
+        x_cartel = (self.ancho_pantalla - ancho_cartel) // 2
+        y_cartel = (self.alto_pantalla - alto_cartel) // 2
+        
+        pygame.draw.rect(self.pantalla, (50, 50, 50), (x_cartel, y_cartel, ancho_cartel, alto_cartel), border_radius=10)
+        pygame.draw.rect(self.pantalla, (150, 150, 150), (x_cartel, y_cartel, ancho_cartel, alto_cartel), 2, border_radius=10)
+        
+        # Texto del mensaje
+        texto = self.fuente_grande.render(self.mensaje_confirmacion, True, (255, 255, 255))
+        self.pantalla.blit(texto, (self.ancho_pantalla // 2 - texto.get_width() // 2, 
+                                  y_cartel + int(30 * self.escala)))
+        
+        # Instrucciones
+        instrucciones = self.fuente.render("Presiona S para Sí, N para No", True, (200, 200, 200))
+        self.pantalla.blit(instrucciones, (self.ancho_pantalla // 2 - instrucciones.get_width() // 2, 
+                                          y_cartel + int(90 * self.escala)))
+
     async def ejecutar(self):
         """Bucle principal del juego"""
         ejecutando = True
@@ -891,7 +888,26 @@ class JuegoPygame:
                 
                 elif evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_ESCAPE:
-                        ejecutando = False
+                        if self.mostrar_confirmacion_reinicio:
+                            self.mostrar_confirmacion_reinicio = False
+                            self.mensaje_confirmacion = ""
+                        else:
+                            ejecutando = False
+                        #ejecutando = False
+
+                    elif evento.key == pygame.K_s:
+                        if self.mostrar_confirmacion_reinicio:
+                            # Reiniciar partida
+                            self.reiniciar_partida()
+                            self.mostrar_confirmacion_reinicio = False
+                            self.mensaje_confirmacion = ""
+                    
+                    elif evento.key == pygame.K_n:
+                        if self.mostrar_confirmacion_reinicio:
+                            # Cancelar reinicio
+                            self.mostrar_confirmacion_reinicio = False
+                            self.mensaje_confirmacion = ""
+
                     elif evento.key == pygame.K_g:
                         if self.ficha_seleccionada is not None and not self.partida.terminada:
                             self.ficha_seleccionada.girar_90()
@@ -930,6 +946,12 @@ class JuegoPygame:
                                         self.actualizar_posiciones_fichas()
                                         self.actualizar_botones()
                                         self.verificar_y_mostrar_fin_partida()
+                                    continue
+
+                                elif boton == self.boton_reiniciar:
+                                    # Mostrar cartel de confirmación
+                                    self.mostrar_confirmacion_reinicio = True
+                                    self.mensaje_confirmacion = "¿Reiniciar partida? (S/N)"
                                     continue
                                 
                                 #elif boton == self.boton_girar:
@@ -1080,184 +1102,12 @@ class JuegoPygame:
                 boton.dibujar(self.pantalla, self.fuente)
             
             self.dibujar_ayuda()
-            
+            self.dibujar_confirmacion_reinicio()
             pygame.display.flip()
             await asyncio.sleep(1 / 60)
         
         pygame.quit()
         return
-'''
-    async def ejecutar(self):
-        """Bucle principal del juego"""
-        ejecutando = True
-        
-        while ejecutando:
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    ejecutando = False
-                
-                elif evento.type == pygame.KEYDOWN:
-                    if evento.key == pygame.K_ESCAPE:
-                        ejecutando = False
-                    elif evento.key == pygame.K_g:
-                        if self.ficha_seleccionada is not None and not self.partida.terminada:
-                            self.ficha_seleccionada.girar_90()
-                            self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
-                            self.actualizar_posiciones_fichas()
-                            self.actualizar_botones()
-                    elif evento.key == pygame.K_f: #TECLA F TOCADO PARA PyGBAG, VER SI CAMBIAR
-                        pygame.display.toggle_fullscreen()
-                
-                elif evento.type == pygame.MOUSEBUTTONDOWN:
-                    if evento.button == 1:
-                        x, y = evento.pos
-                        
-                        for boton in self.botones:
-                            if boton.click():
-                                if boton == self.boton_robar:
-                                    if not self.partida.ya_robo_en_turno and not self.partida.terminada:
-                                        ficha = self.partida.robar_ficha()
-                                        if ficha:
-                                            self.ficha_robada_actual = ficha
-                                            self.ficha_seleccionada = ficha
-                                            self.mostrar_mensaje(f"📥 {self.partida.jugador_actual().nombre} robó: {ficha.mostrar_valores()}")
-                                            self.actualizar_posiciones_fichas()
-                                            self.actualizar_botones()
-                                        else:
-                                            self.mostrar_mensaje("❌ No hay fichas en el pozo")
-                                    continue
-                                
-                                elif boton == self.boton_pasar:
-                                    if self.partida.ya_robo_en_turno and not self.partida.terminada:
-                                        self.partida.pasar_turno()
-                                        self.mostrar_mensaje(f"⏭️ {self.partida.jugador_actual().nombre} pasa turno")
-                                        self.ficha_seleccionada = None
-                                        self.ficha_arrastrada = None
-                                        self.ficha_robada_actual = None
-                                        self.casillas_destacadas = []
-                                        self.actualizar_posiciones_fichas()
-                                        self.actualizar_botones()
-                                        self.verificar_y_mostrar_fin_partida()
-                                    continue
-                                
-                                elif boton == self.boton_girar:
-                                    if self.ficha_seleccionada is not None and not self.partida.terminada:
-                                        self.ficha_seleccionada.girar_90()
-                                        self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
-                                        self.actualizar_posiciones_fichas()
-                                    continue
-                        
-                        ficha, jugador = self.obtener_ficha_en_posicion(x, y)
-                        
-                        if ficha is not None and jugador == self.partida.jugador_actual() and not self.partida.terminada:
-                            self.ficha_seleccionada = ficha
-                            self.ficha_arrastrada = ficha
-                            
-                            for pos in self.posiciones_fichas["jugador1"] + self.posiciones_fichas["jugador2"]:
-                                if pos["ficha"] == ficha:
-                                    self.offset_x = x - pos["x"]
-                                    self.offset_y = y - pos["y"]
-                                    break
-                            self.actualizar_posiciones_fichas()
-                            self.mostrar_mensaje(f"📌 Seleccionada: {ficha.mostrar_valores()}")
-                            self.actualizar_botones()
-                
-                elif evento.type == pygame.MOUSEBUTTONUP:
-                    if evento.button == 1 and self.ficha_arrastrada is not None and not self.partida.terminada:
-                        x, y = evento.pos
-                        casilla = self.obtener_casilla_en_posicion(x, y)
-                        
-                        if casilla and casilla.ficha is None:
-                            if self.partida.tablero.primera_jugada:
-                                if self.ficha_arrastrada.orientacion == casilla.orientacion:
-                                    exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
-                                    if exito:
-                                        self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
-                                        self.ficha_robada_actual = None
-                                        self.actualizar_posiciones_fichas()
-                                        self.actualizar_botones()
-                                        self.verificar_y_mostrar_fin_partida()
-                                    else:
-                                        self.mostrar_mensaje("❌ No se pudo colocar la ficha")
-                                else:
-                                    self.mostrar_mensaje(f"❌ La ficha es {self.ficha_arrastrada.orientacion} pero la casilla es {casilla.orientacion}")
-                            else:
-                                head = self.partida.tablero.head_posible.casilla
-                                tail = self.partida.tablero.tail_posible.casilla
-                                
-                                if casilla.numero == head.numero or casilla.numero == tail.numero:
-                                    posible, _ = self.partida.tablero.puede_colocar(self.ficha_arrastrada, casilla)
-                                    if posible:
-                                        exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
-                                        if exito:
-                                            self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
-                                            self.ficha_robada_actual = None
-                                            self.actualizar_posiciones_fichas()
-                                            self.actualizar_botones()
-                                            self.verificar_y_mostrar_fin_partida()
-                                        else:
-                                            self.mostrar_mensaje("❌ No se pudo colocar la ficha")
-                                    else:
-                                        self.mostrar_mensaje("❌ La ficha no encaja en ese extremo")
-                                else:
-                                    self.mostrar_mensaje("❌ Solo se puede colocar en HEAD o TAIL")
-                        else:
-                            if casilla and casilla.ficha is not None:
-                                self.mostrar_mensaje("❌ Esa casilla ya está ocupada")
-                            else:
-                                self.mostrar_mensaje("❌ Soltar en una casilla")
-                        
-                        self.ficha_arrastrada = None
-                        self.ficha_seleccionada = None
-                        self.casillas_destacadas = []
-                        self.actualizar_posiciones_fichas()
-                        self.actualizar_botones()
-                
-                elif evento.type == pygame.MOUSEMOTION:
-                    if self.ficha_arrastrada is not None and not self.partida.terminada:
-                        self.actualizar_casillas_destacadas(
-                            self.ficha_arrastrada, 
-                            self.partida.jugador_actual()
-                        )
-            
-            # Dibujar
-            self.pantalla.fill(COLOR_FONDO)
-            
-            # Mensajes (turno y jugadas) dentro del tablero
-            self.dibujar_mensajes()
-            
-            self.dibujar_pozo()
-            self.dibujar_tablero()
-            
-            for jugador_id, posiciones in self.posiciones_fichas.items():
-                for pos in posiciones:
-                    es_seleccionada = pos["ficha"] == self.ficha_seleccionada and pos["ficha"] != self.ficha_arrastrada
-                    self.dibujar_ficha_mano(
-                        pos["ficha"],
-                        pos["x"], pos["y"],
-                        seleccionada=es_seleccionada
-                    )
-            
-            if self.ficha_arrastrada is not None:
-                x, y = pygame.mouse.get_pos()
-                self.dibujar_ficha_arrastrada(
-                    self.ficha_arrastrada,
-                    x - self.offset_x,
-                    y - self.offset_y
-                )
-            
-            for boton in self.botones:
-                boton.dibujar(self.pantalla, self.fuente)
-            
-            self.dibujar_ayuda()
-            
-            pygame.display.flip()
-            await asyncio.sleep(1 / 60)  # <--- CEDER CONTROL AL NAVEGADOR
-            #self.clock.tick(60)
-        
-        pygame.quit()
-        sys.exit()'''
-
 
 async def main():
     juego = JuegoPygame()
