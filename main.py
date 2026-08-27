@@ -15,6 +15,8 @@ COLOR_TEXTO_BOTON = (255, 255, 255)
 COLOR_CASILLA_VACIA = (255, 182, 193)  # Rosa claro
 COLOR_CASILLA_DESTACADA = (50, 200, 50)
 
+archivofuente = 'junegull.ttf'
+#archivofuente = 'Ubuntu-Title.ttf'
 
 class Boton:
     def __init__(self, x, y, ancho, alto, texto, color=COLOR_BOTON, color_hover=COLOR_BOTON_HOVER):
@@ -53,8 +55,8 @@ class JuegoPygame:
         self.alto_pantalla = info.current_h
         
         # Crear pantalla completa
-        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
-        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
+        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
+        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
         pygame.display.set_caption("Dominó de Fracciones - ESC para salir")
         self.clock = pygame.time.Clock()
         
@@ -65,7 +67,7 @@ class JuegoPygame:
         self.cargar_imagenes()
         
         # Crear partida (con 4 fichas por jugador para pruebas rápidas)
-        self.partida = Partida("fichas_prueba.csv", fichas_por_jugador=4)
+        self.partida = Partida("fichas.csv", fichas_por_jugador=6)
         
         # Calcular offset para centrar el tablero
         self.calcular_offset_tablero()
@@ -112,15 +114,32 @@ class JuegoPygame:
         
         self.tamano_fuente = max(12, int(24 * self.escala))
         self.tamano_fuente_grande = max(16, int(36 * self.escala))
+        #self.tamano_fuente_fraccion = max(10, int(20 * self.escala))
         self.tamano_fuente_fraccion = max(10, int(20 * self.escala))
-        
-        self.fuente = pygame.font.Font(None, self.tamano_fuente)
-        self.fuente_grande = pygame.font.Font(None, self.tamano_fuente_grande)
-        self.fuente_fraccion = pygame.font.Font(None, self.tamano_fuente_fraccion)
+
+        #self.fuente = pygame.font.Font(None, self.tamano_fuente)
+        #self.fuente_grande = pygame.font.Font(None, self.tamano_fuente_grande)
+        #self.fuente_fraccion = pygame.font.Font(None, self.tamano_fuente_fraccion)
         
         print(f"📐 Escalado: {self.escala:.2f}x")
         print(f"   Ficha: {self.largo_ficha}x{self.ancho_ficha}")
         print(f"   Fuente: {self.tamano_fuente}px")
+
+        # Cargar tipografía desde archivo
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)
+            
+            self.fuente = pygame.font.Font(ruta_fuente, self.tamano_fuente)
+            self.fuente_grande = pygame.font.Font(ruta_fuente, self.tamano_fuente_grande)
+            self.fuente_fraccion = pygame.font.Font(ruta_fuente, self.tamano_fuente_fraccion)
+            print("✅ Tipografía cargada correctamente")
+        except Exception as e:
+            print(f"⚠️ Error cargando tipografía: {e}")
+            # Fallback a fuente por defecto
+            self.fuente = pygame.font.Font(None, self.tamano_fuente)
+            self.fuente_grande = pygame.font.Font(None, self.tamano_fuente_grande)
+            self.fuente_fraccion = pygame.font.Font(None, self.tamano_fuente_fraccion)
     
     def cargar_imagenes(self):
         """Carga las imágenes de los assets"""
@@ -267,13 +286,15 @@ class JuegoPygame:
             if pos:
                 self.posiciones_fichas["jugador2"].append(pos)
 
-    
+
     def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
-        """Dibuja los valores de la ficha encima de la imagen de fondo"""
+        """Dibuja los valores de la ficha en dos líneas centradas como bloque"""
+        # Fondo semitransparente para legibilidad
         s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
         s.fill((255, 255, 255, 180))
         self.pantalla.blit(s, (x, y))
         
+        # Línea central de la ficha
         if ficha.orientacion == "horizontal":
             pygame.draw.line(self.pantalla, (80, 80, 80), 
                            (x + ancho//2, y + 5), 
@@ -283,17 +304,144 @@ class JuegoPygame:
                            (x + 5, y + alto//2), 
                            (x + ancho - 5, y + alto//2), 2)
         
+        # Función para dibujar fracción
+        def dibujar_fraccion(texto, x_centro, y_centro):
+            """Dibuja una fracción con línea horizontal"""
+            if "/" in texto:
+                num, den = texto.split("/")
+            else:
+                num = texto
+                den = ""
+            
+            # Renderizar textos
+            texto_num = self.fuente_fraccion.render(num, True, (0, 0, 0)) if num else None
+            texto_den = self.fuente_fraccion.render(den, True, (0, 0, 0)) if den else None
+            
+            # Alto de los textos
+            alto_num = texto_num.get_height() if texto_num else 0
+            alto_den = texto_den.get_height() if texto_den else 0
+            
+            # Espacio entre líneas
+            separacion_entre_lineas = 2
+            
+            # Ancho máximo del bloque (para la línea)
+            ancho_num = texto_num.get_width() if texto_num else 0
+            ancho_den = texto_den.get_width() if texto_den else 0
+            ancho_max = max(ancho_num, ancho_den)
+            
+            # Ajustar ancho de la línea (con margen)
+            ancho_linea = int(ancho_max * 1.2)  # 20% más ancho que el texto más largo
+            alto_linea = 2  # <--- Altura de la línea (probá con 2, 3, 4)
+            
+            # Alto total del bloque
+            alto_total = alto_num + alto_den + separacion_entre_lineas + alto_linea
+            
+            # Calcular posición Y para centrar el bloque
+            y_inicio = y_centro - alto_total // 2
+            
+            # Dibujar numerador (arriba)
+            if texto_num:
+                self.pantalla.blit(texto_num, 
+                    (x_centro - texto_num.get_width() // 2, 
+                     y_inicio))
+            
+            # Dibujar línea horizontal
+            y_linea = y_inicio + alto_num + separacion_entre_lineas // 2
+            pygame.draw.rect(self.pantalla, (0, 0, 0), 
+                            (x_centro - ancho_linea // 2, y_linea, ancho_linea, alto_linea))
+            
+            # Dibujar denominador (abajo)
+            if texto_den:
+                y_den = y_linea + alto_linea + separacion_entre_lineas // 2
+                self.pantalla.blit(texto_den, 
+                    (x_centro - texto_den.get_width() // 2, 
+                     y_den))
+        
+        # Dibujar valores según orientación
         if ficha.orientacion == "horizontal":
-            texto1 = self.fuente_fraccion.render(ficha.textos["O"].replace("/", "|"), True, (0, 0, 0))
-            texto2 = self.fuente_fraccion.render(ficha.textos["E"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + int(10 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
-            self.pantalla.blit(texto2, (x + ancho - int(30 * self.escala), y + alto//2 - self.tamano_fuente_fraccion//2))
+            dibujar_fraccion(ficha.textos["O"], x + ancho//4, y + alto//2)
+            dibujar_fraccion(ficha.textos["E"], x + 3 * ancho//4, y + alto//2)
         else:
-            texto1 = self.fuente_fraccion.render(ficha.textos["N"].replace("/", "|"), True, (0, 0, 0))
-            texto2 = self.fuente_fraccion.render(ficha.textos["S"].replace("/", "|"), True, (0, 0, 0))
-            self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
-            self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
-    
+            dibujar_fraccion(ficha.textos["N"], x + ancho//2, y + alto//4)
+            dibujar_fraccion(ficha.textos["S"], x + ancho//2, y + 3 * alto//4)
+
+    '''
+    def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
+        """Dibuja los valores de la ficha en dos líneas centradas como bloque"""
+        # Fondo semitransparente para legibilidad
+        s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+        s.fill((255, 255, 255, 180))
+        self.pantalla.blit(s, (x, y))
+        
+        # Línea central
+        if ficha.orientacion == "horizontal":
+            pygame.draw.line(self.pantalla, (80, 80, 80), 
+                           (x + ancho//2, y + 5), 
+                           (x + ancho//2, y + alto - 5), 2)
+        else:
+            pygame.draw.line(self.pantalla, (80, 80, 80), 
+                           (x + 5, y + alto//2), 
+                           (x + ancho - 5, y + alto//2), 2)
+        
+        # Función para dibujar fracción en dos líneas centrada como bloque
+        def dibujar_fraccion(texto, x_centro, y_centro):
+            """Dibuja una fracción en dos líneas centradas como bloque"""
+            # Dividir numerador y denominador
+            if "/" in texto:
+                num, den = texto.split("/")
+            else:
+                num = texto
+                den = ""
+            
+            # Renderizar textos
+            texto_num = self.fuente_fraccion.render(num, True, (0, 0, 0)) if num else None
+            texto_den = self.fuente_fraccion.render(den, True, (0, 0, 0)) if den else None
+            
+            # Calcular alto total del bloque
+            alto_num = texto_num.get_height() if texto_num else 0
+            alto_den = texto_den.get_height() if texto_den else 0
+            separacion_entre_lineas = -5
+            alto_total = alto_num + alto_den + separacion_entre_lineas
+            
+            # Calcular posición Y para centrar el bloque
+            y_inicio = y_centro - alto_total // 2
+            
+            # Dibujar numerador (arriba)
+            if texto_num:
+                self.pantalla.blit(texto_num, 
+                    (x_centro - texto_num.get_width() // 2, 
+                     y_inicio))
+            
+            # Dibujar denominador (abajo)
+            if texto_den:
+                y_den = y_inicio + alto_num + separacion_entre_lineas
+                self.pantalla.blit(texto_den, 
+                    (x_centro - texto_den.get_width() // 2, 
+                     y_den))
+        
+        # Dibujar valores según orientación
+        if ficha.orientacion == "horizontal":
+            # Izquierda (O)
+            dibujar_fraccion(ficha.textos["O"], 
+                            x + ancho//4, 
+                            y + alto//2)
+            
+            # Derecha (E)
+            dibujar_fraccion(ficha.textos["E"], 
+                            x + 3 * ancho//4, 
+                            y + alto//2)
+        else:
+            # Arriba (N)
+            dibujar_fraccion(ficha.textos["N"], 
+                            x + ancho//2, 
+                            y + alto//4)
+            
+            # Abajo (S)
+            dibujar_fraccion(ficha.textos["S"], 
+                            x + ancho//2, 
+                            y + 3 * alto//4)
+    '''
+
     # ============================================================
     # FUNCIONES DE DIBUJO DE FICHAS SEGÚN CONTEXTO
     # ============================================================
