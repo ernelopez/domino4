@@ -56,29 +56,7 @@ class Boton:
                 texto_rect.x -= 5  # <--- Ajustá este valor (2, 3, 4, 5) hasta que quede bien
             
             pantalla.blit(texto_surface, texto_rect)
-    '''
-    def dibujar(self, pantalla, fuente):
-        # Si hay imagen, dibujarla
-        if self.imagen is not None:
-            img = pygame.transform.scale(self.imagen, (self.rect.width, self.rect.height))
-            pantalla.blit(img, (self.rect.x, self.rect.y))
-        else:
-            # Fallback: dibujar rectángulo
-            color = self.color_hover if self.esta_sobre() and self.activo else self.color
-            pygame.draw.rect(pantalla, color, self.rect, border_radius=8)
-            pygame.draw.rect(pantalla, (150, 150, 150), self.rect, 2, border_radius=8)
-        
-        # Texto del botón (si tiene)
-        if self.texto:
-            if self.activo:
-                texto_surface = fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
-            else:
-                texto_surface = fuente.render(self.texto, True, (100, 100, 100))
-            
-            # Centrar el texto en el rectángulo del botón
-            texto_rect = texto_surface.get_rect(center=self.rect.center)
-            pantalla.blit(texto_surface, texto_rect)
-    '''
+    
     def esta_sobre(self):
         return self.rect.collidepoint(pygame.mouse.get_pos())
     
@@ -132,7 +110,8 @@ class JuegoPygame:
 
         self.mostrar_confirmacion_reinicio = False
         self.mensaje_confirmacion = ""
-        
+        self.mostrar_ayuda = False
+
         # Posiciones de las fichas en la mano
         self.posiciones_fichas = {
             "jugador1": [],
@@ -208,10 +187,12 @@ class JuegoPygame:
             ruta_boton_robar = os.path.join(assets_dir, "boton_robar.png")
             ruta_boton_pasar = os.path.join(assets_dir, "boton_pasar.png")
             ruta_boton_reset = os.path.join(assets_dir, "boton_reset.png")
+            ruta_boton_ayuda = os.path.join(assets_dir, "boton_ayuda.png")
             
             self.img_boton_robar = pygame.image.load(ruta_boton_robar)
             self.img_boton_pasar = pygame.image.load(ruta_boton_pasar)
             self.img_boton_reset = pygame.image.load(ruta_boton_reset)
+            self.img_boton_ayuda = pygame.image.load(ruta_boton_ayuda)
 
             print("✅ Imágenes cargadas correctamente")
         except Exception as e:
@@ -222,6 +203,7 @@ class JuegoPygame:
             self.img_boton_robar = None
             self.img_boton_pasar = None
             self.img_boton_reset = None
+            self.img_boton_ayuda = None
     
     def calcular_offset_tablero(self):
         """Calcula el offset para centrar el tablero en la pantalla"""
@@ -297,17 +279,18 @@ class JuegoPygame:
         )
         self.botones.append(self.boton_reiniciar)
 
-        x_ayuda = self.ancho_pantalla - int(160 * self.escala) - int(30 * self.escala)
-        y_ayuda = self.alto_pantalla - int(50 * self.escala)
-        ancho_ayuda = int(160 * self.escala)
-        alto_ayuda = int(45 * self.escala)
+        x_ayuda = self.ancho_pantalla - int(150 * self.escala) - int(30 * self.escala)
+        y_ayuda = self.alto_pantalla - int(75 * self.escala)
+        ancho_ayuda = int(150 * self.escala)
+        alto_ayuda = int(50 * self.escala)
         
         self.boton_ayuda = Boton(
             x_ayuda,
             y_ayuda,
             ancho_ayuda,
             alto_ayuda,
-            "Ayuda"
+            "Ayuda",
+            self.img_boton_ayuda
         )
         self.botones.append(self.boton_ayuda)
     
@@ -321,6 +304,7 @@ class JuegoPygame:
         self.boton_robar.activo = not ya_robo and puede_robar and not partida.terminada
         self.boton_pasar.activo = ya_robo and not partida.terminada
         self.boton_reiniciar.activo = True
+        self.boton_ayuda.activo = True
         #self.boton_girar.activo = self.ficha_seleccionada is not None and not partida.terminada
     
     def actualizar_posiciones_fichas(self):
@@ -877,6 +861,66 @@ class JuegoPygame:
         self.pantalla.blit(instrucciones, (self.ancho_pantalla // 2 - instrucciones.get_width() // 2, 
                                           y_cartel + int(90 * self.escala)))
 
+    def dibujar_ayuda_cartel(self):
+        """Dibuja el cartel de ayuda con instrucciones"""
+        if not self.mostrar_ayuda:
+            return
+        
+        # Fondo oscuro semitransparente
+        s = pygame.Surface((self.ancho_pantalla, self.alto_pantalla), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 180))
+        self.pantalla.blit(s, (0, 0))
+        
+        # Cartel
+        ancho_cartel = int(500 * self.escala)
+        alto_cartel = int(400 * self.escala)
+        x_cartel = (self.ancho_pantalla - ancho_cartel) // 2
+        y_cartel = (self.alto_pantalla - alto_cartel) // 2
+        
+        pygame.draw.rect(self.pantalla, (50, 50, 50), (x_cartel, y_cartel, ancho_cartel, alto_cartel), border_radius=10)
+        pygame.draw.rect(self.pantalla, (150, 150, 150), (x_cartel, y_cartel, ancho_cartel, alto_cartel), 2, border_radius=10)
+        
+        # Título
+        titulo = self.fuente_grande.render("🎲 Instrucciones", True, (255, 255, 255))
+        self.pantalla.blit(titulo, (self.ancho_pantalla // 2 - titulo.get_width() // 2, y_cartel + int(20 * self.escala)))
+        
+        # Línea separadora
+        pygame.draw.line(self.pantalla, (150, 150, 150), 
+                        (x_cartel + int(20 * self.escala), y_cartel + int(65 * self.escala)),
+                        (x_cartel + ancho_cartel - int(20 * self.escala), y_cartel + int(65 * self.escala)), 1)
+        
+        # Instrucciones
+        instrucciones = [
+            "Objetivo: Colocar todas tus fichas",
+            "Gira una ficha: hacé clic en ella o apretá G",
+            "Robá del pozo con el botón celeste",
+            "Pasá el turno cuando no puedas jugar",
+        ]
+        
+        y_texto = y_cartel + int(85 * self.escala)
+        for linea in instrucciones:
+            texto = self.fuente.render(linea, True, (220, 220, 220))
+            self.pantalla.blit(texto, (x_cartel + int(25 * self.escala), y_texto))
+            y_texto += int(35 * self.escala)
+        
+        # Separador
+        y_texto += int(10 * self.escala)
+        pygame.draw.line(self.pantalla, (100, 100, 100), 
+                        (x_cartel + int(20 * self.escala), y_texto),
+                        (x_cartel + ancho_cartel - int(20 * self.escala), y_texto), 1)
+        y_texto += int(20 * self.escala)
+        
+        # Desarrollador
+        desarrollador = self.fuente.render("Desarrollado por: Ernesto López", True, (180, 180, 180))
+        self.pantalla.blit(desarrollador, (self.ancho_pantalla // 2 - desarrollador.get_width() // 2, y_texto))
+        y_texto += int(35 * self.escala)  # <--- AGREGAR ESTA LÍNEA
+
+        linea_extra = self.fuente.render("Escuelas en Foco, BA", True, (180, 180, 180))
+        self.pantalla.blit(linea_extra, (self.ancho_pantalla // 2 - linea_extra.get_width() // 2, y_texto))
+        # Cerrar con ESC
+        cerrar = self.fuente.render("Presioná ESC para cerrar", True, (150, 150, 150))
+        self.pantalla.blit(cerrar, (self.ancho_pantalla // 2 - cerrar.get_width() // 2, y_cartel + alto_cartel - int(35 * self.escala)))
+
     async def ejecutar(self):
         """Bucle principal del juego"""
         ejecutando = True
@@ -891,6 +935,8 @@ class JuegoPygame:
                         if self.mostrar_confirmacion_reinicio:
                             self.mostrar_confirmacion_reinicio = False
                             self.mensaje_confirmacion = ""
+                        elif self.mostrar_ayuda:
+                            self.mostrar_ayuda = False
                         else:
                             ejecutando = False
                         #ejecutando = False
@@ -952,6 +998,10 @@ class JuegoPygame:
                                     # Mostrar cartel de confirmación
                                     self.mostrar_confirmacion_reinicio = True
                                     self.mensaje_confirmacion = "¿Reiniciar partida? (S/N)"
+                                    continue
+
+                                elif boton == self.boton_ayuda:
+                                    self.mostrar_ayuda = not self.mostrar_ayuda
                                     continue
                                 
                                 #elif boton == self.boton_girar:
@@ -1101,7 +1151,7 @@ class JuegoPygame:
             for boton in self.botones:
                 boton.dibujar(self.pantalla, self.fuente)
             
-            self.dibujar_ayuda()
+            self.dibujar_ayuda_cartel()
             self.dibujar_confirmacion_reinicio()
             pygame.display.flip()
             await asyncio.sleep(1 / 60)
