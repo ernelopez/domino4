@@ -772,26 +772,52 @@ class JuegoPygame:
         return False
     
     def dibujar_mensajes(self):
-        """Dibuja los mensajes en el centro del tablero"""
-        if not self.mensaje:
-            return
-        
-        # Posición centrada
+        """Dibuja el título, turno y mensajes"""
         centro_x = self.ancho_pantalla // 2
-        centro_y = int(80 * self.escala)
         
-        # Fondo semitransparente
-        texto = self.fuente_grande.render(self.mensaje, True, (255, 255, 255))
-        ancho_texto = texto.get_width()
-        alto_texto = texto.get_height()
+        # TÍTULO (arriba del pozo)
+        # Usar la misma tipografía personalizada
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)  # <--- Tu archivo .ttf
+        fuente_titulo = pygame.font.Font(ruta_fuente, int(48 * self.escala))  # <--- Más grande
+        titulo = fuente_titulo.render("Dominó de equivalencias", True, (255, 255, 200))
+        y_titulo = int(120 * self.escala)
         
-        # Fondo
-        s = pygame.Surface((ancho_texto + 40, alto_texto + 20), pygame.SRCALPHA)
-        s.fill((0, 0, 0, 180))
-        self.pantalla.blit(s, (centro_x - ancho_texto//2 - 20, centro_y - alto_texto//2 - 10))
+        # Fondo para el título
+        ancho_t = titulo.get_width()
+        alto_t = titulo.get_height()
+        self.pantalla.blit(titulo, (centro_x - ancho_t//2, y_titulo - alto_t//2))
         
-        # Texto
-        self.pantalla.blit(texto, (centro_x - ancho_texto//2, centro_y - alto_texto//2))
+        # Turno (debajo del título)
+
+        jugador_actual = self.partida.jugador_actual()
+        if jugador_actual == self.partida.jugadores[0]:
+            color_turno = (200, 100, 100)  # Rojo suave para Jugador 1
+        else:
+            color_turno = (100, 150, 220)  # Azul suave para Jugador 2
+
+        texto_turno = self.fuente_grande.render(
+            f"Turno: {jugador_actual.nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
+            True, color_turno
+        )
+        #texto_turno = self.fuente_grande.render(
+        #    f"Turno: {self.partida.jugador_actual().nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
+        #    True, (255, 255, 255)
+        #)
+        y_turno = y_titulo + int(50 * self.escala)
+        ancho_turno = texto_turno.get_width()
+        alto_turno = texto_turno.get_height()
+        self.pantalla.blit(texto_turno, (centro_x - ancho_turno//2, y_turno - alto_turno//2))
+        
+        # Mensaje de jugada (debajo del turno)
+        '''
+        if self.mensaje:
+            texto_msg = self.fuente.render(self.mensaje, True, (255, 255, 255))
+            ancho_m = texto_msg.get_width()
+            alto_m = texto_msg.get_height()
+            y_mensaje = y_turno + int(50 * self.escala)
+            self.pantalla.blit(texto_msg, (centro_x - ancho_m//2, y_mensaje - alto_m//2))
+        '''
 
     def dibujar_ayuda(self):
         """Dibuja las instrucciones en la esquina inferior derecha"""
@@ -1130,6 +1156,20 @@ class JuegoPygame:
             
             self.dibujar_pozo()
             self.dibujar_tablero()
+
+            # Dibujar etiquetas de jugadores
+
+            # Jugador 1 (izquierda)
+            texto_j1 = self.fuente.render("Jugador 1", True, (200, 100, 100))
+            x_j1 = int(30 * self.escala)
+            y_j1 = int(50 * self.escala)
+            self.pantalla.blit(texto_j1, (x_j1, y_j1))
+
+            # Jugador 2 (derecha)
+            texto_j2 = self.fuente.render("Jugador 2", True, (100, 150, 220))
+            x_j2 = self.ancho_pantalla - int(30 * self.escala) - texto_j2.get_width()
+            y_j2 = int(50 * self.escala)
+            self.pantalla.blit(texto_j2, (x_j2, y_j2))
             
             for jugador_id, posiciones in self.posiciones_fichas.items():
                 for pos in posiciones:

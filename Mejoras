@@ -8,9 +8,10 @@ Mejoras
 - *Quitar botón girar
 - *Dos botones centrados, dentro del tablero, asset botones
 - *botón de reinicio de partida (cartel de está seguro)
-- dibujar_ayuda
-- Título del juego
+- *dibujar_ayuda
+- *Título del juego
 - Carteles: Jugador 1, Jugador 2
+- El tablero quedó un poco corrido a la derecha!!
 - fichas del pozo descentradas
 - Dejar mensajes abajo: quién juega, ganador / sacar otros mensajes
 - esquinas redondeadas: en rect y en imágenes
