@@ -25,3 +25,8 @@ if __name__ == "__main__":
 
 La def principal es una clase async, tiene esto después del flip:
 await asyncio.sleep(1 / 60)  # <--- CEDER CONTROL AL NAVEGADOR
+
+
+OJO, debe estar así:
+#self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
+self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))

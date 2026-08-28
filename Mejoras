@@ -14,8 +14,15 @@ Mejoras
 - *El tablero quedó un poco corrido a la derecha!!
 - *Dejar mensajes abajo: quién juega, ganador / sacar otros mensajes
 - esquinas redondeadas: en rect y en imágenes
+- simplificar dorsos
+- dar vuelta cartas jugador inactivo
 - imagen reverso ficha
 - Colores: pasteles
 - *En esquina: botón de instrucciones y reglamento
 - En otra esquina: logo BA/escuelas en foco
 - Sonidos: girar, colocar correctamente, ganador, pozo, pasar
+- Revisar punto de descarga de ficha girada
+
+
+pygodide build .
+cp index_web.html build/index.html

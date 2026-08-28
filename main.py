@@ -15,6 +15,9 @@ COLOR_TEXTO_BOTON = (255, 255, 255)
 COLOR_CASILLA_VACIA = (255, 182, 193)  # Rosa claro
 COLOR_CASILLA_DESTACADA = (50, 200, 50)
 
+ANCHO_PANTALLA = 1200
+ALTO_PANTALLA = 750
+
 archivofuente = 'junegull.ttf'
 #archivofuente = 'Ubuntu-Title.ttf'
 
@@ -66,22 +69,25 @@ class Boton:
 
 class JuegoPygame:
     def __init__(self):
-        pygame.init()
+        pygame.init()        
         
-        # Obtener tamaño de la pantalla
-        info = pygame.display.Info()
-        self.ancho_pantalla = info.current_w
-        self.alto_pantalla = info.current_h
-        
-        # Crear pantalla completa
-        self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
-        #self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
-        pygame.display.set_caption("Dominó de Fracciones - ESC para salir")
+        if hasattr(sys, 'pygodide'):
+            # WEB: usar el tamaño definido en config
+            self.ancho_pantalla = ANCHO_PANTALLA
+            self.alto_pantalla = ALTO_PANTALLA
+            self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla))
+        else:
+            info = pygame.display.Info()
+            self.ancho_pantalla = info.current_w
+            self.alto_pantalla = info.current_h
+            self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
+
+        pygame.display.set_caption("Dominó de Fracciones")
         self.clock = pygame.time.Clock()
+
         
-        # Recalcular tamaños según resolución
         self.recalcular_tamanos()
-        
+
         # Cargar imágenes
         self.cargar_imagenes()
         
@@ -122,17 +128,53 @@ class JuegoPygame:
         # Crear botones
         self.crear_botones()
     
-
+    def obtener_tamaño_canvas(self):
+        """Obtiene el tamaño real del canvas en el navegador"""
+        if hasattr(sys, 'pygodide'):
+            try:
+                import js
+                canvas = js.document.getElementById('canvas')
+                self.ancho_pantalla = canvas.clientWidth
+                self.alto_pantalla = canvas.clientHeight
+            except:
+                pass
 
     def recalcular_tamanos(self):
+        BASE_ANCHO = ANCHO_PANTALLA
+        BASE_ALTO = ALTO_PANTALLA
+        self.escala_x = self.ancho_pantalla / BASE_ANCHO
+        self.escala_y = self.alto_pantalla / BASE_ALTO
+        self.escala = min(self.escala_x, self.escala_y)
+
+
         """Recalcula todos los tamaños según la resolución actual"""
-        BASE_ANCHO = 1200
-        BASE_ALTO = 750
+        
+        '''
+        if hasattr(sys, 'pygodide'):
+            # Web: obtener el tamaño real del canvas desde JavaScript
+            try:
+                import js
+                canvas = js.document.getElementById('canvas')
+                self.ancho_pantalla = canvas.clientWidth
+                self.alto_pantalla = canvas.clientHeight
+                print(f"🔵 Tamaño real del canvas: {self.ancho_pantalla}x{self.alto_pantalla}")
+            except:
+                # Fallback: tamaño fijo
+                self.ancho_pantalla = ANCHO_PANTALLA
+                self.alto_pantalla = ALTO_PANTALLA
+        else:
+            # Escritorio: usar el tamaño de la pantalla
+            info = pygame.display.Info()
+            self.ancho_pantalla = info.current_w
+            self.alto_pantalla = info.current_h
+        
+        BASE_ANCHO = ANCHO_PANTALLA
+        BASE_ALTO = ALTO_PANTALLA
         
         self.escala_x = self.ancho_pantalla / BASE_ANCHO
         self.escala_y = self.alto_pantalla / BASE_ALTO
         self.escala = min(self.escala_x, self.escala_y)
-        
+        '''
         self.largo_ficha = int(LARGO_FICHA * self.escala)
         self.ancho_ficha = int(ANCHO_FICHA * self.escala)
         self.margen_tablero = int(MARGEN_TABLERO * self.escala)
@@ -1202,6 +1244,7 @@ class JuegoPygame:
                         # Limpiar estado de clic
                         self.ficha_clickeada = None
             
+
             # Dibujar
             self.pantalla.fill(COLOR_FONDO)
             
@@ -1258,5 +1301,6 @@ async def main():
     await juego.ejecutar()
 
 if __name__ == "__main__":
-    juego = JuegoPygame()
-    asyncio.run(juego.ejecutar())
+    #juego = JuegoPygame()
+    #asyncio.run(juego.ejecutar())
+    asyncio.run(main())
