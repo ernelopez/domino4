@@ -74,7 +74,8 @@ class Boton:
 
 class JuegoPygame:
     def __init__(self):
-        pygame.init()        
+        pygame.init()
+        pygame.mixer.init()
         
         if hasattr(sys, 'pygodide'):
             # WEB: usar el tamaño definido en config
@@ -186,6 +187,7 @@ class JuegoPygame:
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             assets_dir = os.path.join(script_dir, "assets")
+            sonidos_dir = os.path.join(script_dir, "sonidos")
             
             # Fichas
             ruta_frente = os.path.join(assets_dir, "ficha.png")
@@ -215,6 +217,15 @@ class JuegoPygame:
             self.img_boton_ayuda = pygame.image.load(ruta_boton_ayuda)
 
             print("✅ Imágenes cargadas correctamente")
+
+            # Cargar sonidos
+            self.sonido_win = pygame.mixer.Sound(os.path.join(sonidos_dir, "win.mp3"))
+            self.sonido_girar = pygame.mixer.Sound(os.path.join(sonidos_dir, "girar.mp3"))
+            self.sonido_clic = pygame.mixer.Sound(os.path.join(sonidos_dir, "clic.mp3"))
+            self.sonido_coin = pygame.mixer.Sound(os.path.join(sonidos_dir, "coin.mp3"))
+            
+            print("✅ Sonidos cargados correctamente")
+
         except Exception as e:
             print(f"⚠️ Error cargando imágenes: {e}")
             self.img_frente = None
@@ -224,6 +235,12 @@ class JuegoPygame:
             self.img_boton_pasar = None
             self.img_boton_reset = None
             self.img_boton_ayuda = None
+            print(f"⚠️ Error cargando sonidos: {e}")
+            # Si falla, crear sonidos vacíos para no romper el juego
+            self.sonido_win = None
+            self.sonido_girar = None
+            self.sonido_clic = None
+            self.sonido_coin = None
 
     def calcular_offset_tablero(self):
         """Calcula el offset para centrar el tablero en la pantalla"""
@@ -844,7 +861,8 @@ class JuegoPygame:
                     color = COLOR_JUGADOR1  # Rojo suave para Jugador 1
                 else:
                     color = COLOR_JUGADOR2  # Azul suave para Jugador 2
-                
+                if self.sonido_win:
+                    self.sonido_win.play()
                 self.mostrar_mensaje(f"¡{self.partida.ganador.nombre} GANÓ!", "success", color)
             else:
                 self.mostrar_mensaje("EMPATE", "warning")
@@ -1145,6 +1163,8 @@ class JuegoPygame:
                     elif evento.key == pygame.K_g:
                         if self.ficha_seleccionada is not None and not self.partida.terminada:
                             self.ficha_seleccionada.girar_90()
+                            if self.sonido_girar:
+                                self.sonido_girar.play()
                             self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
                             self.actualizar_posiciones_fichas()
                             self.actualizar_botones()
@@ -1160,6 +1180,8 @@ class JuegoPygame:
                                     if not self.partida.ya_robo_en_turno and not self.partida.terminada:
                                         ficha = self.partida.robar_ficha()
                                         if ficha:
+                                            if self.sonido_clic:
+                                                self.sonido_clic.play()
                                             self.ficha_robada_actual = ficha
                                             self.ficha_seleccionada = ficha
                                             self.mostrar_mensaje(f"📥 {self.partida.jugador_actual().nombre} robó: {ficha.mostrar_valores()}")
@@ -1171,6 +1193,8 @@ class JuegoPygame:
                                 
                                 elif boton == self.boton_pasar:
                                     if self.partida.ya_robo_en_turno and not self.partida.terminada:
+                                        if self.sonido_clic:
+                                            self.sonido_clic.play()
                                         self.partida.pasar_turno()
                                         self.mostrar_mensaje(f"⏭️ {self.partida.jugador_actual().nombre} pasa turno")
                                         self.ficha_seleccionada = None
@@ -1248,6 +1272,8 @@ class JuegoPygame:
                         if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
                             # Es un clic → girar la ficha
                             self.ficha_clickeada.girar_90()
+                            if self.sonido_girar:
+                                self.sonido_girar.play()
                             self.offset_x = 0
                             self.offset_y = 0
                             self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_clickeada.mostrar_valores()}")
@@ -1266,6 +1292,8 @@ class JuegoPygame:
                                     if self.ficha_arrastrada.orientacion == casilla.orientacion:
                                         exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
                                         if exito:
+                                            if self.sonido_coin:
+                                                self.sonido_coin.play()
                                             self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
                                             self.ficha_robada_actual = None
                                             self.actualizar_posiciones_fichas()
@@ -1284,6 +1312,8 @@ class JuegoPygame:
                                         if posible:
                                             exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
                                             if exito:
+                                                if self.sonido_coin:
+                                                    self.sonido_coin.play()
                                                 self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
                                                 self.ficha_robada_actual = None
                                                 self.actualizar_posiciones_fichas()

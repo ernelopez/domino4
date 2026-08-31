@@ -25,3 +25,14 @@ Mejoras
 
 pygodide build .
 cp index_web.html build/index.html
+
+
+Quiero agregar sonidos. En la carpeta /sonidos tengo cuatro archivos:
+win.mp3
+clic.mp3
+girar.mp3
+coin.mp3
+Quiero que win se dispare al terminar el juego, cuando hay ganador.
+Quiero que girar se dispare al girar haciendo clic sobre la ficha o al apretar G.
+Quiero que clic se dispare si se cliquea levantar del pozo o pasar.
+Quiero que coin se active al conectar correctamente una ficha.
