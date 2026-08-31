@@ -443,7 +443,7 @@ class JuegoPygame:
             ancho_max = max(ancho_num, ancho_den)
             
             # Ajustar ancho de la línea (con margen)
-            ancho_linea = int(ancho_max * 1.2)  # 20% más ancho que el texto más largo
+            ancho_linea = int(ancho_max * 1)
             alto_linea = 2  # <--- Altura de la línea (probá con 2, 3, 4)
             
             # Alto total del bloque
@@ -711,6 +711,7 @@ class JuegoPygame:
         texto = self.fuente.render(f"Pozo: {len(fichas_pozo)} fichas", True, (200, 200, 200))
         self.pantalla.blit(texto, (centro_x - int(60 * self.escala), inicio_y - int(30 * self.escala)))
     
+
     def dibujar_tablero(self):
         """Dibuja el tablero centrado en la pantalla"""
         for casilla in self.partida.tablero.casillas:
@@ -789,16 +790,23 @@ class JuegoPygame:
         y_ajustada = (y - self.offset_tablero_y) / self.escala
         
         for casilla in self.partida.tablero.casillas:
-            if (casilla.x <= x_ajustada <= casilla.x + LARGO_FICHA and
-                casilla.y <= y_ajustada <= casilla.y + ANCHO_FICHA):
+            if casilla.orientacion == "horizontal":
+                # Horizontal: ancho = LARGO_FICHA, alto = ANCHO_FICHA
+                ancho = LARGO_FICHA
+                alto = ANCHO_FICHA
+            else:
+                # Vertical: ancho = ANCHO_FICHA, alto = LARGO_FICHA
+                ancho = ANCHO_FICHA
+                alto = LARGO_FICHA
+            
+            if (casilla.x <= x_ajustada <= casilla.x + ancho and
+                casilla.y <= y_ajustada <= casilla.y + alto):
                 return casilla
         
         return None
-    
+
     def actualizar_casillas_destacadas(self, ficha, jugador):
-        """Actualiza qué casillas se iluminan al pasar una ficha por encima"""
         self.casillas_destacadas = []
-        
         if ficha is None:
             return
         
@@ -808,22 +816,22 @@ class JuegoPygame:
         if casilla_bajo_mouse is None:
             return
         
+        if casilla_bajo_mouse.ficha is not None:
+            return
+        
         if jugador == self.partida.jugador_actual():
             if self.partida.tablero.primera_jugada:
-                if (casilla_bajo_mouse.ficha is None and 
-                    casilla_bajo_mouse.orientacion == ficha.orientacion):
+                if casilla_bajo_mouse.orientacion == ficha.orientacion:
                     self.casillas_destacadas.append(casilla_bajo_mouse)
             else:
                 head = self.partida.tablero.head_posible.casilla
                 tail = self.partida.tablero.tail_posible.casilla
-                
-                if casilla_bajo_mouse.numero == head.numero:
-                    if head.ficha is None and head.orientacion == ficha.orientacion:
-                        self.casillas_destacadas.append(head)
-                elif casilla_bajo_mouse.numero == tail.numero:
-                    if tail.ficha is None and tail.orientacion == ficha.orientacion:
-                        self.casillas_destacadas.append(tail)
-    
+                if casilla_bajo_mouse.numero == head.numero or casilla_bajo_mouse.numero == tail.numero:
+                    if casilla_bajo_mouse.orientacion == ficha.orientacion:
+                        self.casillas_destacadas.append(casilla_bajo_mouse)
+
+
+
     def mostrar_mensaje(self, texto, tipo="info"):
         """Muestra un mensaje en la pantalla"""
         self.mensaje = texto
@@ -1247,7 +1255,7 @@ class JuegoPygame:
             y_j2 = int(50 * self.escala)
             self.pantalla.blit(texto_j2, (x_j2, y_j2))
             
-            #NUEVO
+            #NUEVO: DAR VUELTA CARTAS DEL JUGADOR QUE NO ESTÁ JUGANDO
             jugador_actual = self.partida.jugador_actual()
 
             for jugador_id, posiciones in self.posiciones_fichas.items():
