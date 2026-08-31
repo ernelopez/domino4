@@ -15,6 +15,11 @@ COLOR_TEXTO_BOTON = (255, 255, 255)
 COLOR_CASILLA_VACIA = (255, 182, 193)  # Rosa claro
 COLOR_CASILLA_DESTACADA = (50, 200, 50)
 
+# Colores de jugadores
+COLOR_JUGADOR1 = (200, 100, 100)  # Rojo suave
+COLOR_JUGADOR2 = (100, 150, 220)  # Azul suave
+COLOR_TEXTO = (255, 255, 255)
+
 ANCHO_PANTALLA = 1200
 ALTO_PANTALLA = 750
 
@@ -830,8 +835,90 @@ class JuegoPygame:
                     if casilla_bajo_mouse.orientacion == ficha.orientacion:
                         self.casillas_destacadas.append(casilla_bajo_mouse)
 
+    def verificar_y_mostrar_fin_partida(self):
+        """Verifica si la partida terminó y muestra el mensaje correspondiente"""
+        if self.partida.terminada:
+            if self.partida.ganador:
+                # Determinar color del ganador
+                if self.partida.ganador == self.partida.jugadores[0]:
+                    color = COLOR_JUGADOR1  # Rojo suave para Jugador 1
+                else:
+                    color = COLOR_JUGADOR2  # Azul suave para Jugador 2
+                
+                self.mostrar_mensaje(f"¡{self.partida.ganador.nombre} GANÓ!", "success", color)
+            else:
+                self.mostrar_mensaje("EMPATE", "warning")
+            self.actualizar_botones()
+            return True
+        
+        self.partida.verificar_fin_partida()
+        if self.partida.terminada:
+            if self.partida.ganador:
+                if self.partida.ganador == self.partida.jugadores[0]:
+                    color = COLOR_JUGADOR1
+                else:
+                    color = COLOR_JUGADOR2
+                self.mostrar_mensaje(f"¡{self.partida.ganador.nombre} GANÓ!", "success", color)
+            else:
+                self.mostrar_mensaje("EMPATE", "warning")
+            self.actualizar_botones()
+            return True
+        
+        return False
 
 
+    def mostrar_mensaje(self, texto, tipo="info", color=None):
+        """Muestra un mensaje en la pantalla"""
+        self.mensaje = texto
+        self.tiempo_mensaje = pygame.time.get_ticks()
+        if color:
+            self.mensaje_color = color
+        else:
+            self.mensaje_color = COLOR_TEXTO  # blanco por defecto
+
+    def dibujar_mensajes(self):
+        """Dibuja el título, turno y mensajes"""
+        centro_x = self.ancho_pantalla // 2
+        
+        # TÍTULO (arriba del pozo)
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)
+        fuente_titulo = pygame.font.Font(ruta_fuente, int(48 * self.escala))
+        titulo = fuente_titulo.render("Dominó de equivalencias", True, (255, 255, 200))
+        y_titulo = int(150 * self.escala)
+        
+        ancho_t = titulo.get_width()
+        alto_t = titulo.get_height()
+        self.pantalla.blit(titulo, (centro_x - ancho_t//2, y_titulo - alto_t//2))
+        
+        # Turno o mensaje de fin de partida
+        if self.partida.terminada:
+            # Mostrar mensaje de ganador o empate
+            if self.partida.ganador:
+                if self.partida.ganador == self.partida.jugadores[0]:
+                    color = COLOR_JUGADOR1
+                else:
+                    color = COLOR_JUGADOR2
+                texto = f"¡{self.partida.ganador.nombre} GANÓ!"
+            else:
+                color = COLOR_TEXTO
+                texto = "EMPATE"
+        else:
+            # Mostrar turno normal
+            jugador_actual = self.partida.jugador_actual()
+            if jugador_actual == self.partida.jugadores[0]:
+                color = COLOR_JUGADOR1
+            else:
+                color = COLOR_JUGADOR2
+            texto = f"Turno: {jugador_actual.nombre}"
+        
+        texto_turno = self.fuente_grande.render(texto, True, color)
+        y_turno = y_titulo + int(400 * self.escala)
+        ancho_turno = texto_turno.get_width()
+        alto_turno = texto_turno.get_height()
+        self.pantalla.blit(texto_turno, (centro_x - ancho_turno//2, y_turno - alto_turno//2))
+
+    '''
     def mostrar_mensaje(self, texto, tipo="info"):
         """Muestra un mensaje en la pantalla"""
         self.mensaje = texto
@@ -858,6 +945,7 @@ class JuegoPygame:
         
         return False
     
+    
     def dibujar_mensajes(self):
         """Dibuja el título, turno y mensajes"""
         centro_x = self.ancho_pantalla // 2
@@ -879,9 +967,9 @@ class JuegoPygame:
 
         jugador_actual = self.partida.jugador_actual()
         if jugador_actual == self.partida.jugadores[0]:
-            color_turno = (200, 100, 100)  # Rojo suave para Jugador 1
+            color_turno = COLOR_JUGADOR1  # Rojo suave para Jugador 1
         else:
-            color_turno = (100, 150, 220)  # Azul suave para Jugador 2
+            color_turno = COLOR_JUGADOR2  # Azul suave para Jugador 2
 
         texto_turno = self.fuente_grande.render(
             f"Turno: {jugador_actual.nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
@@ -891,17 +979,8 @@ class JuegoPygame:
         ancho_turno = texto_turno.get_width()
         alto_turno = texto_turno.get_height()
         self.pantalla.blit(texto_turno, (centro_x - ancho_turno//2, y_turno - alto_turno//2))
-        
-        # Mensaje de jugada (debajo del turno)
-        '''
-        if self.mensaje:
-            texto_msg = self.fuente.render(self.mensaje, True, (255, 255, 255))
-            ancho_m = texto_msg.get_width()
-            alto_m = texto_msg.get_height()
-            y_mensaje = y_turno + int(50 * self.escala)
-            self.pantalla.blit(texto_msg, (centro_x - ancho_m//2, y_mensaje - alto_m//2))
-        '''
-
+    '''    
+    
     def dibujar_ayuda(self):
         """Dibuja las instrucciones en la esquina inferior derecha"""
         x = self.ancho_pantalla - int(300 * self.escala)
@@ -1244,13 +1323,13 @@ class JuegoPygame:
             # Dibujar etiquetas de jugadores
 
             # Jugador 1 (izquierda)
-            texto_j1 = self.fuente.render("Jugador 1", True, (200, 100, 100))
+            texto_j1 = self.fuente.render("Jugador 1", True, COLOR_JUGADOR1)
             x_j1 = int(30 * self.escala)
             y_j1 = int(50 * self.escala)
             self.pantalla.blit(texto_j1, (x_j1, y_j1))
 
             # Jugador 2 (derecha)
-            texto_j2 = self.fuente.render("Jugador 2", True, (100, 150, 220))
+            texto_j2 = self.fuente.render("Jugador 2", True, COLOR_JUGADOR2)
             x_j2 = self.ancho_pantalla - int(30 * self.escala) - texto_j2.get_width()
             y_j2 = int(50 * self.escala)
             self.pantalla.blit(texto_j2, (x_j2, y_j2))
