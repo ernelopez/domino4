@@ -82,7 +82,7 @@ class JuegoPygame:
             self.alto_pantalla = info.current_h
             self.pantalla = pygame.display.set_mode((self.ancho_pantalla, self.alto_pantalla), pygame.FULLSCREEN)
 
-        pygame.display.set_caption("Dominó de Fracciones")
+        pygame.display.set_caption("Dominó de equivalencias")
         self.clock = pygame.time.Clock()
 
         
@@ -147,34 +147,6 @@ class JuegoPygame:
         self.escala = min(self.escala_x, self.escala_y)
 
 
-        """Recalcula todos los tamaños según la resolución actual"""
-        
-        '''
-        if hasattr(sys, 'pygodide'):
-            # Web: obtener el tamaño real del canvas desde JavaScript
-            try:
-                import js
-                canvas = js.document.getElementById('canvas')
-                self.ancho_pantalla = canvas.clientWidth
-                self.alto_pantalla = canvas.clientHeight
-                print(f"🔵 Tamaño real del canvas: {self.ancho_pantalla}x{self.alto_pantalla}")
-            except:
-                # Fallback: tamaño fijo
-                self.ancho_pantalla = ANCHO_PANTALLA
-                self.alto_pantalla = ALTO_PANTALLA
-        else:
-            # Escritorio: usar el tamaño de la pantalla
-            info = pygame.display.Info()
-            self.ancho_pantalla = info.current_w
-            self.alto_pantalla = info.current_h
-        
-        BASE_ANCHO = ANCHO_PANTALLA
-        BASE_ALTO = ALTO_PANTALLA
-        
-        self.escala_x = self.ancho_pantalla / BASE_ANCHO
-        self.escala_y = self.alto_pantalla / BASE_ALTO
-        self.escala = min(self.escala_x, self.escala_y)
-        '''
         self.largo_ficha = int(LARGO_FICHA * self.escala)
         self.ancho_ficha = int(ANCHO_FICHA * self.escala)
         self.margen_tablero = int(MARGEN_TABLERO * self.escala)
@@ -183,10 +155,6 @@ class JuegoPygame:
         self.tamano_fuente_grande = max(16, int(36 * self.escala))
         #self.tamano_fuente_fraccion = max(10, int(20 * self.escala))
         self.tamano_fuente_fraccion = max(10, int(20 * self.escala))
-
-        #self.fuente = pygame.font.Font(None, self.tamano_fuente)
-        #self.fuente_grande = pygame.font.Font(None, self.tamano_fuente_grande)
-        #self.fuente_fraccion = pygame.font.Font(None, self.tamano_fuente_fraccion)
         
         print(f"📐 Escalado: {self.escala:.2f}x")
         print(f"   Ficha: {self.largo_ficha}x{self.ancho_ficha}")
@@ -216,16 +184,19 @@ class JuegoPygame:
             
             # Fichas
             ruta_frente = os.path.join(assets_dir, "ficha.png")
-            ruta_frente_v = os.path.join(assets_dir, "ficha_vertical.png")
+            ruta_frente_v = os.path.join(assets_dir, "ficha_v.png")
             ruta_dorso = os.path.join(assets_dir, "dorso.png")
+            ruta_dorso_v = os.path.join(assets_dir, "dorso_v.png")
             
             self.img_frente = pygame.image.load(ruta_frente)
             self.img_frente_v = pygame.image.load(ruta_frente_v)
             self.img_dorso = pygame.image.load(ruta_dorso)
+            self.img_dorso_v = pygame.image.load(ruta_dorso_v)
             
             self.img_frente = pygame.transform.scale(self.img_frente, (self.largo_ficha, self.ancho_ficha))
             self.img_frente_v = pygame.transform.scale(self.img_frente_v, (self.ancho_ficha, self.largo_ficha))
             self.img_dorso = pygame.transform.scale(self.img_dorso, (self.largo_ficha, self.ancho_ficha))
+            self.img_dorso_v = pygame.transform.scale(self.img_dorso_v, (self.ancho_ficha, self.largo_ficha))
             
             # Botones
             ruta_boton_robar = os.path.join(assets_dir, "boton_robar.png")
@@ -286,47 +257,8 @@ class JuegoPygame:
         self.offset_tablero_y = base_offset_y + ajuste_y
         
         print(f"base_offset_x={base_offset_x}, ajuste_x={ajuste_x}, offset_x={self.offset_tablero_x}")
+
     
-    '''
-    def calcular_offset_tablero(self):
-        """Calcula el offset para centrar el tablero en la pantalla"""
-        min_x = float('inf')
-        max_x = float('-inf')
-        min_y = float('inf')
-        max_y = float('-inf')
-        
-        for casilla in self.partida.tablero.casillas:
-            if casilla.x < min_x:
-                min_x = casilla.x
-            if casilla.x > max_x:
-                max_x = casilla.x
-            if casilla.y < min_y:
-                min_y = casilla.y
-            if casilla.y > max_y:
-                max_y = casilla.y
-        
-        max_x += LARGO_FICHA
-        max_y += LARGO_FICHA
-        
-        centro_tablero_x = (min_x + max_x) // 2
-        centro_tablero_y = (min_y + max_y) // 2
-        
-        self.offset_tablero_x = self.ancho_pantalla // 2 - int(centro_tablero_x * self.escala)
-        self.offset_tablero_y = self.alto_pantalla // 2 - int(centro_tablero_y * self.escala)
-    
-        #============================================
-        # DEBUG - Agregar estos prints
-        # ============================================
-        print(f"min_x={min_x}, max_x={max_x}, centro_tablero_x={centro_tablero_x}")
-        print(f"ancho_pantalla={self.ancho_pantalla}, centro_pantalla={self.ancho_pantalla // 2}")
-        print(f"escala={self.escala}")
-        
-        self.offset_tablero_x = self.ancho_pantalla // 2 - int(centro_tablero_x * self.escala)
-        self.offset_tablero_y = self.alto_pantalla // 2 - int(centro_tablero_y * self.escala)
-        
-        print(f"offset_tablero_x={self.offset_tablero_x}, offset_tablero_y={self.offset_tablero_y}")
-        # ============================================
-'''
     def crear_botones(self):
         """Crea los botones de la interfaz"""
         self.botones = []
@@ -336,7 +268,7 @@ class JuegoPygame:
         separacion = int(20 * self.escala)
         
         centro_x = self.ancho_pantalla // 2
-        y_boton = self.alto_pantalla // 2 + int(200 * self.escala) #Altura del botón
+        y_boton = self.alto_pantalla // 2 + int(220 * self.escala) #Altura del botón
         
         # Botón Robar con imagen
         self.boton_robar = Boton(
@@ -590,18 +522,67 @@ class JuegoPygame:
             self.pantalla.blit(texto1, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + int(10 * self.escala)))
             self.pantalla.blit(texto2, (x + ancho//2 - self.tamano_fuente_fraccion//2, y + alto - int(30 * self.escala)))
     
-    def dibujar_ficha_dorso(self, x, y, ancho, alto):
-        """Dibuja una ficha boca abajo (dorso)"""
-        if self.img_dorso is not None:
-            img = pygame.transform.scale(self.img_dorso, (ancho, alto))
-            self.pantalla.blit(img, (x, y))
-            return
-        
-        # Fallback sin imagen
-        pygame.draw.rect(self.pantalla, (100, 100, 100), (x, y, ancho, alto), border_radius=5)
-        pygame.draw.rect(self.pantalla, (50, 50, 50), (x, y, ancho, alto), 2, border_radius=5)
-    
 
+    def dibujar_ficha_dorso(self, x, y, ancho, alto, orientacion="horizontal"):
+        """Dibuja una ficha boca abajo (dorso)"""
+        if orientacion == "vertical" and self.img_dorso_v is not None:
+            #img = pygame.transform.scale(self.img_dorso_v, (ancho, alto))
+            #self.pantalla.blit(img, (x, y))
+            self.pantalla.blit(self.img_dorso_v, (x, y))
+        elif self.img_dorso is not None:
+            #img = pygame.transform.scale(self.img_dorso, (ancho, alto))
+            #self.pantalla.blit(img, (x, y))
+            self.pantalla.blit(self.img_dorso, (x, y))
+        else:
+            # Fallback sin imagen
+            pygame.draw.rect(self.pantalla, (100, 100, 100), (x, y, ancho, alto), border_radius=5)
+            pygame.draw.rect(self.pantalla, (50, 50, 50), (x, y, ancho, alto), 2, border_radius=5)
+
+
+    def dibujar_ficha_mano(self, ficha, x, y, seleccionada=False, es_turno=True):
+        """
+        Dibuja una ficha en la mano de un jugador.
+        Si no es el turno del jugador, muestra el dorso.
+        """
+        if es_turno:
+            # Mostrar frente (código existente)
+            if ficha.orientacion == "horizontal":
+                ancho = self.largo_ficha
+                alto = self.ancho_ficha
+                dx = 0
+                dy = 0
+            else:
+                ancho = self.ancho_ficha
+                alto = self.largo_ficha
+                dx = 0
+                dy = (self.ancho_ficha - self.largo_ficha) // 2
+            
+            if self.img_frente is not None:
+                img = self.img_frente_v if ficha.orientacion == "vertical" else self.img_frente
+                self.pantalla.blit(img, (x + dx, y + dy))
+                
+                if seleccionada:
+                    pygame.draw.rect(self.pantalla, (100, 200, 255), (x + dx, y + dy, ancho, alto), 
+                                   max(2, int(4 * self.escala)), border_radius=5)
+                
+                self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
+                return
+        else:
+            # Mostrar dorso
+            if ficha.orientacion == "horizontal":
+                ancho = self.largo_ficha
+                alto = self.ancho_ficha
+            else:
+                ancho = self.ancho_ficha
+                alto = self.largo_ficha
+            
+            if self.img_dorso is not None:
+                img = self.img_dorso_v if ficha.orientacion == "vertical" else self.img_dorso
+                self.pantalla.blit(img, (x, y))
+                return
+
+
+    '''
     def dibujar_ficha_mano(self, ficha, x, y, seleccionada=False):
         if ficha.orientacion == "horizontal":
             ancho = self.largo_ficha
@@ -635,6 +616,7 @@ class JuegoPygame:
             
             self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
             return
+    '''
 
     def dibujar_ficha_arrastrada(self, ficha, x, y):
         """
@@ -723,7 +705,8 @@ class JuegoPygame:
             x = inicio_x + columna * (ancho + separacion)
             y = inicio_y + fila * (alto + separacion)
             
-            self.dibujar_ficha_dorso(x, y, ancho, alto)
+            ficha = fichas_pozo[i]
+            self.dibujar_ficha_dorso(x, y, ancho, alto, 'vertical')
         
         texto = self.fuente.render(f"Pozo: {len(fichas_pozo)} fichas", True, (200, 200, 200))
         self.pantalla.blit(texto, (centro_x - int(60 * self.escala), inicio_y - int(30 * self.escala)))
@@ -877,7 +860,7 @@ class JuegoPygame:
         ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)  # <--- Tu archivo .ttf
         fuente_titulo = pygame.font.Font(ruta_fuente, int(48 * self.escala))  # <--- Más grande
         titulo = fuente_titulo.render("Dominó de equivalencias", True, (255, 255, 200))
-        y_titulo = int(120 * self.escala)
+        y_titulo = int(150 * self.escala)
         
         # Fondo para el título
         ancho_t = titulo.get_width()
@@ -896,11 +879,7 @@ class JuegoPygame:
             f"Turno: {jugador_actual.nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
             True, color_turno
         )
-        #texto_turno = self.fuente_grande.render(
-        #    f"Turno: {self.partida.jugador_actual().nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
-        #    True, (255, 255, 255)
-        #)
-        y_turno = y_titulo + int(50 * self.escala)
+        y_turno = y_titulo + int(400 * self.escala)
         ancho_turno = texto_turno.get_width()
         alto_turno = texto_turno.get_height()
         self.pantalla.blit(texto_turno, (centro_x - ancho_turno//2, y_turno - alto_turno//2))
@@ -1268,6 +1247,25 @@ class JuegoPygame:
             y_j2 = int(50 * self.escala)
             self.pantalla.blit(texto_j2, (x_j2, y_j2))
             
+            #NUEVO
+            jugador_actual = self.partida.jugador_actual()
+
+            for jugador_id, posiciones in self.posiciones_fichas.items():
+                # Determinar si es el turno de este jugador
+                if jugador_id == "jugador1":
+                    es_turno = (jugador_actual == self.partida.jugadores[0])
+                else:  # jugador2
+                    es_turno = (jugador_actual == self.partida.jugadores[1])
+                
+                for pos in posiciones:
+                    es_seleccionada = pos["ficha"] == self.ficha_seleccionada and pos["ficha"] != self.ficha_arrastrada
+                    self.dibujar_ficha_mano(
+                        pos["ficha"],
+                        pos["x"], pos["y"],
+                        seleccionada=es_seleccionada,
+                        es_turno=es_turno
+                    )
+            '''
             for jugador_id, posiciones in self.posiciones_fichas.items():
                 for pos in posiciones:
                     es_seleccionada = pos["ficha"] == self.ficha_seleccionada and pos["ficha"] != self.ficha_arrastrada
@@ -1276,7 +1274,8 @@ class JuegoPygame:
                         pos["x"], pos["y"],
                         seleccionada=es_seleccionada
                     )
-            
+            '''
+
             if self.ficha_arrastrada is not None:
                 x, y = pygame.mouse.get_pos()
                 self.dibujar_ficha_arrastrada(
