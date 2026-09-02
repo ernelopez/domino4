@@ -53,7 +53,8 @@ class Boton:
             if self.activo:
                 texto_surface = fuente.render(self.texto, True, COLOR_TEXTO_BOTON)
             else:
-                texto_surface = fuente.render(self.texto, True, (100, 100, 100))
+                texto_surface = fuente.render(self.texto, True, (180, 180, 180))
+                texto_surface.set_alpha(128)
             
             # Centrar el texto en el rectángulo del botón
             texto_rect = texto_surface.get_rect(center=self.rect.center)
@@ -133,6 +134,7 @@ class JuegoPygame:
         
         # Crear botones
         self.crear_botones()
+        self.actualizar_botones()
     
     def obtener_tamaño_canvas(self):
         """Obtiene el tamaño real del canvas en el navegador"""
@@ -369,6 +371,7 @@ class JuegoPygame:
         self.boton_reiniciar.activo = True
         self.boton_ayuda.activo = True
         #self.boton_girar.activo = self.ficha_seleccionada is not None and not partida.terminada
+        #print(f"ya_robo={ya_robo}, boton_pasar.activo={self.boton_pasar.activo}")
     
 
     def actualizar_posiciones_fichas(self):
