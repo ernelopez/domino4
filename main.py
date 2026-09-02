@@ -264,6 +264,19 @@ class JuegoPygame:
             if casilla.y + ANCHO_FICHA > max_y:
                 max_y = casilla.y + ANCHO_FICHA
         
+        centro_x = (min_x + max_x) / 2
+        centro_y = (min_y + max_y) / 2
+        
+        # Offset base
+        offset_x = self.ancho_pantalla // 2 - int(centro_x * self.escala)
+        offset_y = self.alto_pantalla // 2 - int(centro_y * self.escala)
+        
+        # Ajuste de media ficha horizontal (escalado)
+        media_ficha = int((ANCHO_FICHA / 2) * self.escala)
+        self.offset_tablero_x = offset_x + media_ficha
+        self.offset_tablero_y = offset_y
+        
+        '''
         centro_x = (min_x + max_x) // 2
         centro_y = (min_y + max_y) // 2
         
@@ -272,14 +285,14 @@ class JuegoPygame:
         base_offset_y = self.alto_pantalla // 2 - int(centro_y * self.escala)
         
         # Ajuste manual (cambiá estos valores hasta que quede centrado)
-        ajuste_x = 40   # <--- Probá con 20, 40, 60, -20, -40
+        ajuste_x = int(40 * self.escala)   # <--- Probá con 20, 40, 60, -20, -40
         ajuste_y = 0
         
         self.offset_tablero_x = base_offset_x + ajuste_x
         self.offset_tablero_y = base_offset_y + ajuste_y
         
         print(f"base_offset_x={base_offset_x}, ajuste_x={ajuste_x}, offset_x={self.offset_tablero_x}")
-
+        '''
     
     def crear_botones(self):
         """Crea los botones de la interfaz"""
@@ -731,7 +744,7 @@ class JuegoPygame:
             self.dibujar_ficha_dorso(x, y, ancho, alto, 'vertical')
         
         texto = self.fuente.render(f"Pozo: {len(fichas_pozo)} fichas", True, (200, 200, 200))
-        self.pantalla.blit(texto, (centro_x - int(60 * self.escala), inicio_y - int(30 * self.escala)))
+        self.pantalla.blit(texto, (centro_x - texto.get_width() // 2, inicio_y - int(30 * self.escala)))
     
 
     def dibujar_tablero(self):

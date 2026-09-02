@@ -5,6 +5,7 @@ Hay un archivo .toml que indica la librería pygame.
 Se compila con:
 source venv/bin/activate
 pygodide build .
+cp index_web.html build/index.html
 zip -r domino-web.zip build/
 
 pygodide serve . (para servir localmente)
