@@ -370,6 +370,7 @@ class JuegoPygame:
         self.boton_ayuda.activo = True
         #self.boton_girar.activo = self.ficha_seleccionada is not None and not partida.terminada
     
+
     def actualizar_posiciones_fichas(self):
         """Actualiza las posiciones de las fichas de cada jugador en la pantalla"""
         self.posiciones_fichas = {
@@ -379,7 +380,7 @@ class JuegoPygame:
         
         margen = int(30 * self.escala)
         y_inicial = int(80 * self.escala)
-        max_por_columna = 20
+        max_por_columna = 11  # <--- CAMBIADO: máximo 11 fichas por columna
         separacion = int(8 * self.escala)
         separacion_columnas = int(15 * self.escala)
         
@@ -617,41 +618,6 @@ class JuegoPygame:
                 return
 
 
-    '''
-    def dibujar_ficha_mano(self, ficha, x, y, seleccionada=False):
-        if ficha.orientacion == "horizontal":
-            ancho = self.largo_ficha
-            alto = self.ancho_ficha
-            # Posición sin desplazar
-            dx = 0
-            dy = 0
-        else:
-            ancho = self.ancho_ficha
-            alto = self.largo_ficha
-            # Desplazar para centrar la ficha vertical en el espacio de la horizontal
-            # La ficha horizontal ocupaba LARGO_FICHA x ANCHO_FICHA
-            # La ficha vertical ocupa ANCHO_FICHA x LARGO_FICHA
-            # Para centrarla, hay que desplazarla:
-            #   - En X: (LARGO_FICHA - ANCHO_FICHA) / 2
-            #   - En Y: (ANCHO_FICHA - LARGO_FICHA) / 2 (negativo, sube)
-            dx = 0
-            dy = (self.ancho_ficha - self.largo_ficha) // 2
-        
-        if self.img_frente is not None:
-            if ficha.orientacion == "vertical" :
-                img = self.img_frente_v
-            else :
-                img = self.img_frente
-
-            self.pantalla.blit(img, (x + dx, y + dy))
-            
-            if seleccionada:
-                pygame.draw.rect(self.pantalla, (100, 200, 255), (x + dx, y + dy, ancho, alto), 
-                               max(2, int(4 * self.escala)), border_radius=5)
-            
-            self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
-            return
-    '''
 
     def dibujar_ficha_arrastrada(self, ficha, x, y):
         """
@@ -949,68 +915,6 @@ class JuegoPygame:
         alto_turno = texto_turno.get_height()
         self.pantalla.blit(texto_turno, (centro_x - ancho_turno//2, y_turno - alto_turno//2))
 
-    '''
-    def mostrar_mensaje(self, texto, tipo="info"):
-        """Muestra un mensaje en la pantalla"""
-        self.mensaje = texto
-        self.tiempo_mensaje = pygame.time.get_ticks()
-    
-    def verificar_y_mostrar_fin_partida(self):
-        """Verifica si la partida terminó y muestra el mensaje correspondiente"""
-        if self.partida.terminada:
-            if self.partida.ganador:
-                self.mostrar_mensaje(f"🎉 ¡{self.partida.ganador.nombre} GANÓ!", "success")
-            else:
-                self.mostrar_mensaje("🤝 EMPATE", "warning")
-            self.actualizar_botones()
-            return True
-        
-        self.partida.verificar_fin_partida()
-        if self.partida.terminada:
-            if self.partida.ganador:
-                self.mostrar_mensaje(f"🎉 ¡{self.partida.ganador.nombre} GANÓ!", "success")
-            else:
-                self.mostrar_mensaje("🤝 EMPATE", "warning")
-            self.actualizar_botones()
-            return True
-        
-        return False
-    
-    
-    def dibujar_mensajes(self):
-        """Dibuja el título, turno y mensajes"""
-        centro_x = self.ancho_pantalla // 2
-        
-        # TÍTULO (arriba del pozo)
-        # Usar la misma tipografía personalizada
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)  # <--- Tu archivo .ttf
-        fuente_titulo = pygame.font.Font(ruta_fuente, int(48 * self.escala))  # <--- Más grande
-        titulo = fuente_titulo.render("Dominó de equivalencias", True, (255, 255, 200))
-        y_titulo = int(150 * self.escala)
-        
-        # Fondo para el título
-        ancho_t = titulo.get_width()
-        alto_t = titulo.get_height()
-        self.pantalla.blit(titulo, (centro_x - ancho_t//2, y_titulo - alto_t//2))
-        
-        # Turno (debajo del título)
-
-        jugador_actual = self.partida.jugador_actual()
-        if jugador_actual == self.partida.jugadores[0]:
-            color_turno = COLOR_JUGADOR1  # Rojo suave para Jugador 1
-        else:
-            color_turno = COLOR_JUGADOR2  # Azul suave para Jugador 2
-
-        texto_turno = self.fuente_grande.render(
-            f"Turno: {jugador_actual.nombre}" if not self.partida.terminada else "PARTIDA TERMINADA",
-            True, color_turno
-        )
-        y_turno = y_titulo + int(400 * self.escala)
-        ancho_turno = texto_turno.get_width()
-        alto_turno = texto_turno.get_height()
-        self.pantalla.blit(texto_turno, (centro_x - ancho_turno//2, y_turno - alto_turno//2))
-    '''    
     
     def dibujar_ayuda(self):
         """Dibuja las instrucciones en la esquina inferior derecha"""
