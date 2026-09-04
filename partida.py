@@ -235,3 +235,53 @@ class Partida:
             return True
         
         return False
+
+    def determinar_ficha_inicial(self):
+        """
+        Encuentra la ficha inicial según las reglas del dominó:
+        1. El doble mayor
+        2. Si no hay dobles, la ficha con mayor suma
+        Retorna (ficha, jugador)
+        """
+        mejor_ficha = None
+        mejor_jugador = None
+        mejor_valor = -1
+        encontre_doble = False
+        
+        for jugador in self.jugadores:
+            for ficha in jugador.fichas:
+                # Verificar si es doble
+                if ficha.valores["O"] == ficha.valores["E"]:
+                    valor_doble = ficha.valores["O"]
+                    # Si es el primer doble o es mayor que el mejor doble encontrado
+                    if not encontre_doble or valor_doble > mejor_valor:
+                        mejor_ficha = ficha
+                        mejor_jugador = jugador
+                        mejor_valor = valor_doble
+                        encontre_doble = True
+        
+        # Si no se encontraron dobles, buscar la ficha con mayor suma
+        if not encontre_doble:
+            for jugador in self.jugadores:
+                for ficha in jugador.fichas:
+                    suma = ficha.valores["O"] + ficha.valores["E"]
+                    if suma > mejor_valor:
+                        mejor_ficha = ficha
+                        mejor_jugador = jugador
+                        mejor_valor = suma
+        
+        return mejor_ficha, mejor_jugador
+
+    def colocar_ficha_inicial(self, ficha, casilla):
+        """Coloca la ficha inicial sin cambiar el turno"""
+        jugador = self.jugador_actual()
+        
+        if ficha not in jugador.fichas:
+            return False
+        
+        colocada = self.tablero.colocar_primera_ficha(ficha, casilla)
+        if not colocada:
+            return False
+        
+        jugador.sacar_ficha(ficha)
+        return True
