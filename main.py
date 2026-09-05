@@ -456,7 +456,7 @@ class JuegoPygame:
             alto_num = texto_num.get_height() if texto_num else 0
             alto_den = texto_den.get_height() if texto_den else 0
             
-            separacion_entre_lineas = 2
+            separacion_entre_lineas = -5
             
             ancho_num = texto_num.get_width() if texto_num else 0
             ancho_den = texto_den.get_width() if texto_den else 0
@@ -1339,6 +1339,12 @@ class JuegoPygame:
                             es_turno=es_turno
                         )
 
+                for boton in self.botones:
+                    boton.dibujar(self.pantalla, self.fuente)
+                
+                self.dibujar_ayuda_cartel()
+                self.dibujar_confirmacion_reinicio()
+
                 if self.ficha_arrastrada is not None:
                     x, y = pygame.mouse.get_pos()
                     self.dibujar_ficha_arrastrada(
@@ -1347,11 +1353,6 @@ class JuegoPygame:
                         y - self.offset_y
                     )
                 
-                for boton in self.botones:
-                    boton.dibujar(self.pantalla, self.fuente)
-                
-                self.dibujar_ayuda_cartel()
-                self.dibujar_confirmacion_reinicio()
                 pygame.display.flip()
                 await asyncio.sleep(1 / 60)
             
