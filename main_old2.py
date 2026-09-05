@@ -985,7 +985,7 @@ class JuegoPygame:
         linea_extra = self.fuente.render("Escuelas en Foco, BA", True, (180, 180, 180))
         self.pantalla.blit(linea_extra, (self.ancho_pantalla // 2 - linea_extra.get_width() // 2, y_texto))
         
-        cerrar = self.fuente.render("Presioná cualquier tecla para cerrar", True, (150, 150, 150))
+        cerrar = self.fuente.render("Presioná ESC para cerrar", True, (150, 150, 150))
         self.pantalla.blit(cerrar, (self.ancho_pantalla // 2 - cerrar.get_width() // 2, y_cartel + alto_cartel - int(35 * self.escala)))
 
     async def ejecutar(self):
@@ -993,443 +993,398 @@ class JuegoPygame:
         
         while juego_activo:
             # --- INPUT DE NOMBRES ---
-            if not await self.bucle_input_nombres():
-                break
+            self.ingresando_nombre = 0
+            while not self.nombres_ingresados:
+                for evento in pygame.event.get():
+                    if evento.type == pygame.QUIT:
+                        juego_activo = False
+                        return
+                    
+                    elif evento.type == pygame.MOUSEBUTTONDOWN:
+                        x, y = evento.pos
+                        centro_x = self.ancho_pantalla // 2
+                        centro_y = self.alto_pantalla // 2
+                        
+                        rect_j1 = pygame.Rect(centro_x - 100, centro_y - 95, 300, 50)
+                        rect_j2 = pygame.Rect(centro_x - 100, centro_y - 5, 300, 50)
+                        
+                        if rect_j1.collidepoint(x, y):
+                            self.ingresando_nombre = 1
+                            self.nombre_jugador1 = ""
+                        elif rect_j2.collidepoint(x, y):
+                            self.ingresando_nombre = 2
+                            self.nombre_jugador2 = ""
+                        else:
+                            self.ingresando_nombre = 0
+                    
+                    elif evento.type == pygame.KEYDOWN:
+                        # Si el cartel de salir está abierto, S y N solo responden al cartel
+                        if self.mostrar_confirmacion_salir:
+                            if evento.key == pygame.K_s:
+                                juego_activo = False
+                                return
+                            elif evento.key == pygame.K_n:
+                                self.mostrar_confirmacion_salir = False
+                                # No procesar la tecla para escribir
+                                continue
+                            # Si es cualquier otra tecla, ignorar (no escribir mientras el cartel está abierto)
+                            continue
+
+                        # Si no hay cartel, procesar normalmente
+                        if evento.key == pygame.K_RETURN or evento.key == pygame.K_KP_ENTER:
+                            if len(self.nombre_jugador1.strip()) > 0 and len(self.nombre_jugador2.strip()) > 0:
+                                self.nombres_ingresados = True
+                                # Crear NUEVA partida con los nombres
+                                self.partida = Partida("fichas.csv", fichas_por_jugador=6)
+                                self.partida.jugadores[0].nombre = self.nombre_jugador1
+                                self.partida.jugadores[1].nombre = self.nombre_jugador2
+                                self.ficha_inicial, self.jugador_inicial = self.partida.determinar_ficha_inicial()
+                                self.ficha_inicial_colocada = False
+                                self.partida.turno = self.partida.jugadores.index(self.jugador_inicial)
+                                self.calcular_offset_tablero()
+                                self.actualizar_posiciones_fichas()
+                                self.actualizar_botones()
+                        elif evento.key == pygame.K_BACKSPACE:
+                            if self.ingresando_nombre == 1:
+                                self.nombre_jugador1 = self.nombre_jugador1[:-1]
+                            elif self.ingresando_nombre == 2:
+                                self.nombre_jugador2 = self.nombre_jugador2[:-1]
+                        elif evento.key == pygame.K_ESCAPE:
+                            self.mostrar_confirmacion_salir = True
+                        else:
+                            if self.ingresando_nombre == 1:
+                                self.nombre_jugador1 += evento.unicode
+                            elif self.ingresando_nombre == 2:
+                                self.nombre_jugador2 += evento.unicode
+                        
+                self.dibujar_input_nombres()
+                self.dibujar_confirmacion_reinicio()
+                pygame.display.flip()
+                await asyncio.sleep(1 / 60)
             
             # --- MOSTRAR MENSAJE DE QUIÉN COMIENZA ---
-            self.mostrar_mensaje_inicio()
+            if self.jugador_inicial == self.partida.jugadores[0]:
+                nombre = self.nombre_jugador1
+                color = COLOR_JUGADOR1
+            else:
+                nombre = self.nombre_jugador2
+                color = COLOR_JUGADOR2
+            self.mostrar_mensaje(f"Comienza {nombre}!", "info", color)
             
             # --- BUCLE DEL JUEGO ---
-            if not await self.bucle_juego():
+            ejecutando = True
+            while ejecutando:
+                for evento in pygame.event.get():
+                    if evento.type == pygame.QUIT:
+                        ejecutando = False
+                        juego_activo = False
+                    
+                    elif evento.type == pygame.KEYDOWN:
+                        if self.mostrar_ayuda:
+                            self.mostrar_ayuda = False
+
+                        if evento.key == pygame.K_ESCAPE:
+                            if self.mostrar_ayuda:
+                                self.mostrar_ayuda = False
+                            elif self.mostrar_confirmacion_reinicio:
+                                self.mostrar_confirmacion_reinicio = False
+                                self.mensaje_confirmacion = ""
+                            elif self.mostrar_confirmacion_salir:
+                                pass
+                            else:
+                                self.mostrar_confirmacion_salir = True
+
+                        elif evento.key == pygame.K_s:
+                            if self.mostrar_confirmacion_reinicio:
+                                # Reiniciar partida
+                                self.partida = Partida("fichas.csv", fichas_por_jugador=6)
+                                self.ficha_inicial, self.jugador_inicial = self.partida.determinar_ficha_inicial()
+                                self.ficha_inicial_colocada = False
+                                
+                                self.ficha_seleccionada = None
+                                self.ficha_arrastrada = None
+                                self.ficha_robada_actual = None
+                                self.ficha_clickeada = None
+                                self.casillas_destacadas = []
+                                self.mensaje = ""
+                                self.tiempo_mensaje = 0
+                                self.offset_x = 0
+                                self.offset_y = 0
+                                
+                                self.calcular_offset_tablero()
+                                self.actualizar_posiciones_fichas()
+                                self.actualizar_botones()
+                                
+                                self.partida.jugadores[0].nombre = self.nombre_jugador1
+                                self.partida.jugadores[1].nombre = self.nombre_jugador2
+                                self.partida.turno = self.partida.jugadores.index(self.jugador_inicial)
+
+                                self.mostrar_confirmacion_reinicio = False
+                                self.mensaje_confirmacion = ""
+                                
+                                self.nombres_ingresados = False
+                                ejecutando = False
+                            elif self.mostrar_confirmacion_salir:
+                                ejecutando = False
+                                juego_activo = False
+
+                        elif evento.key == pygame.K_n:
+                            if self.mostrar_confirmacion_reinicio:
+                                self.mostrar_confirmacion_reinicio = False
+                                self.mensaje_confirmacion = ""
+                            elif self.mostrar_confirmacion_salir:
+                                self.mostrar_confirmacion_salir = False
+
+                        elif evento.key == pygame.K_g:
+                            if self.ficha_seleccionada is not None and not self.partida.terminada:
+                                self.ficha_seleccionada.girar_90()
+                                if self.sonido_girar:
+                                    self.sonido_girar.play()
+                                self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
+                                self.actualizar_posiciones_fichas()
+                                self.actualizar_botones()
+                    
+                    elif evento.type == pygame.MOUSEBUTTONDOWN:
+                        if evento.button == 1:
+                            x, y = evento.pos
+                            
+                            for boton in self.botones:
+                                if boton.click():
+                                    if boton == self.boton_robar:
+                                        if not self.partida.ya_robo_en_turno and not self.partida.terminada and self.ficha_inicial_colocada:
+                                            ficha = self.partida.robar_ficha()
+                                            if ficha:
+                                                if self.sonido_clic:
+                                                    self.sonido_clic.play()
+                                                self.ficha_robada_actual = ficha
+                                                self.ficha_seleccionada = ficha
+                                                self.mostrar_mensaje(f"📥 {self.partida.jugador_actual().nombre} robó: {ficha.mostrar_valores()}")
+                                                self.actualizar_posiciones_fichas()
+                                                self.actualizar_botones()
+                                            else:
+                                                self.mostrar_mensaje("❌ No hay fichas en el pozo")
+                                        continue
+                                    
+                                    elif boton == self.boton_pasar:
+                                        if self.partida.ya_robo_en_turno and not self.partida.terminada:
+                                            if self.sonido_clic:
+                                                self.sonido_clic.play()
+                                            self.partida.pasar_turno()
+                                            self.mostrar_mensaje(f"⏭️ {self.partida.jugador_actual().nombre} pasa turno")
+                                            self.ficha_seleccionada = None
+                                            self.ficha_arrastrada = None
+                                            self.ficha_robada_actual = None
+                                            self.casillas_destacadas = []
+                                            self.actualizar_posiciones_fichas()
+                                            self.actualizar_botones()
+                                            self.verificar_y_mostrar_fin_partida()
+                                        continue
+
+                                    elif boton == self.boton_reiniciar:
+                                        self.mostrar_confirmacion_reinicio = True
+                                        self.mensaje_confirmacion = "¿Reiniciar partida? (S/N)"
+                                        continue
+
+                                    elif boton == self.boton_ayuda:
+                                        self.mostrar_ayuda = not self.mostrar_ayuda
+                                        continue
+                            
+                            # Seleccionar ficha con click
+                            ficha, jugador = self.obtener_ficha_en_posicion(x, y)
+                            
+                            if ficha is not None and jugador == self.partida.jugador_actual() and not self.partida.terminada:
+                                if not self.ficha_inicial_colocada and jugador == self.jugador_inicial:
+                                    if ficha == self.ficha_inicial:
+                                        self.ficha_clickeada = ficha
+                                        self.pos_click_x = x
+                                        self.pos_click_y = y
+                                        self.ficha_arrastrada = None
+                                        self.ficha_seleccionada = ficha
+                                else:
+                                    self.ficha_clickeada = ficha
+                                    self.pos_click_x = x
+                                    self.pos_click_y = y
+                                    self.ficha_arrastrada = None
+                                    self.ficha_seleccionada = ficha
+                    
+                    elif evento.type == pygame.MOUSEMOTION:
+                        if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
+                            dx = evento.pos[0] - self.pos_click_x
+                            dy = evento.pos[1] - self.pos_click_y
+                            
+                            if (dx*dx + dy*dy) > 100:
+                                self.ficha_arrastrada = self.ficha_clickeada
+                                self.ficha_clickeada = None
+                                
+                                for pos in self.posiciones_fichas["jugador1"] + self.posiciones_fichas["jugador2"]:
+                                    if pos["ficha"] == self.ficha_arrastrada:
+                                        self.offset_x = self.pos_click_x - pos["x"]
+                                        self.offset_y = self.pos_click_y - pos["y"]
+                                        break
+                                
+                                self.actualizar_posiciones_fichas()
+                                self.actualizar_casillas_destacadas(self.ficha_arrastrada, self.partida.jugador_actual())
+                                self.mostrar_mensaje(f"📌 Arrastrando: {self.ficha_arrastrada.mostrar_valores()}")
+                        
+                        if self.ficha_arrastrada is not None and not self.partida.terminada:
+                            self.actualizar_casillas_destacadas(
+                                self.ficha_arrastrada, 
+                                self.partida.jugador_actual()
+                            )
+                    
+                    #ACA
+                    elif evento.type == pygame.MOUSEBUTTONUP:
+                        if evento.button == 1:
+                            if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
+                                self.ficha_clickeada.girar_90()
+                                if self.sonido_girar:
+                                    self.sonido_girar.play()
+                                self.offset_x = 0
+                                self.offset_y = 0
+                                self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_clickeada.mostrar_valores()}")
+                                self.actualizar_posiciones_fichas()
+                                self.actualizar_botones()
+                                self.ficha_clickeada = None
+                                self.ficha_seleccionada = None
+                            
+                            elif self.ficha_arrastrada is not None and not self.partida.terminada:
+                                x, y = evento.pos
+                                casilla = self.obtener_casilla_en_posicion(x, y)
+                                
+                                if casilla and casilla.ficha is None:
+                                    if self.partida.tablero.primera_jugada:
+                                        if self.ficha_arrastrada.orientacion == casilla.orientacion:
+                                            exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
+                                            if exito:
+                                                if self.sonido_coin:
+                                                    self.sonido_coin.play()
+                                                
+                                                if self.ficha_arrastrada == self.ficha_inicial and not self.ficha_inicial_colocada:
+                                                    self.ficha_inicial_colocada = True
+                                                    self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó la ficha inicial!")
+                                                else:
+                                                    self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
+                                                
+                                                self.ficha_robada_actual = None
+                                                self.actualizar_posiciones_fichas()
+                                                self.actualizar_botones()
+                                                self.verificar_y_mostrar_fin_partida()
+                                            else:
+                                                self.mostrar_mensaje("❌ No se pudo colocar la ficha")
+                                        else:
+                                            self.mostrar_mensaje(f"❌ La ficha es {self.ficha_arrastrada.orientacion} pero la casilla es {casilla.orientacion}")
+                                    else:
+                                        head = self.partida.tablero.head_posible.casilla
+                                        tail = self.partida.tablero.tail_posible.casilla
+                                        
+                                        if casilla.numero == head.numero or casilla.numero == tail.numero:
+                                            if self.ficha_arrastrada.orientacion == casilla.orientacion:
+                                                posible, _ = self.partida.tablero.puede_colocar(self.ficha_arrastrada, casilla)
+                                                if posible:
+                                                    exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
+                                                    if exito:
+                                                        if self.sonido_coin:
+                                                            self.sonido_coin.play()
+                                                        
+                                                        if self.ficha_arrastrada == self.ficha_inicial and not self.ficha_inicial_colocada:
+                                                            self.ficha_inicial_colocada = True
+                                                            self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó la ficha inicial!")
+                                                        else:
+                                                            self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
+                                                        
+                                                        self.ficha_robada_actual = None
+                                                        self.actualizar_posiciones_fichas()
+                                                        self.actualizar_botones()
+                                                        self.verificar_y_mostrar_fin_partida()
+                                                    else:
+                                                        self.mostrar_mensaje("❌ No se pudo colocar la ficha")
+                                                else:
+                                                    self.mostrar_mensaje("❌ La ficha no encaja en ese extremo")
+                                                    if self.sonido_error:
+                                                        self.sonido_error.play()
+                                            else:
+                                                self.mostrar_mensaje(f"❌ La ficha es {self.ficha_arrastrada.orientacion} pero la casilla es {casilla.orientacion}")
+                                        else:
+                                            self.mostrar_mensaje("❌ Solo se puede colocar en HEAD o TAIL")
+                                else:
+                                    if casilla and casilla.ficha is not None:
+                                        self.mostrar_mensaje("❌ Esa casilla ya está ocupada")
+                                    else:
+                                        self.mostrar_mensaje("❌ Soltar en una casilla")
+                                
+                                self.ficha_arrastrada = None
+                                self.ficha_seleccionada = None
+                                self.casillas_destacadas = []
+                                self.actualizar_posiciones_fichas()
+                                self.actualizar_botones()
+                            
+                            self.ficha_clickeada = None
+
+
+                # --- DIBUJAR ---
+                self.pantalla.fill(COLOR_FONDO)
+                
+                self.dibujar_mensajes()
+                self.dibujar_pozo()
+                self.dibujar_tablero()
+
+                # Etiquetas de jugadores
+                texto_j1 = self.fuente.render(self.nombre_jugador1, True, COLOR_JUGADOR1)
+                x_j1 = int(30 * self.escala)
+                y_j1 = int(50 * self.escala)
+                self.pantalla.blit(texto_j1, (x_j1, y_j1))
+
+                texto_j2 = self.fuente.render(self.nombre_jugador2, True, COLOR_JUGADOR2)
+                x_j2 = self.ancho_pantalla - int(30 * self.escala) - texto_j2.get_width()
+                y_j2 = int(50 * self.escala)
+                self.pantalla.blit(texto_j2, (x_j2, y_j2))
+                
+                # Fichas de los jugadores
+                jugador_actual = self.partida.jugador_actual()
+
+                for jugador_id, posiciones in self.posiciones_fichas.items():
+                    if jugador_id == "jugador1":
+                        jugador = self.partida.jugadores[0]
+                        es_turno = (jugador_actual == jugador)
+                    else:
+                        jugador = self.partida.jugadores[1]
+                        es_turno = (jugador_actual == jugador)
+                    
+                    for pos in posiciones:
+                        es_seleccionada = pos["ficha"] == self.ficha_seleccionada and pos["ficha"] != self.ficha_arrastrada
+                        
+                        self.dibujar_ficha_mano(
+                            pos["ficha"],
+                            pos["x"], pos["y"],
+                            seleccionada=es_seleccionada,
+                            jugador=jugador,
+                            es_turno=es_turno
+                        )
+
+                for boton in self.botones:
+                    boton.dibujar(self.pantalla, self.fuente)
+                
+                self.dibujar_ayuda_cartel()
+                self.dibujar_confirmacion_reinicio()
+
+                if self.ficha_arrastrada is not None:
+                    x, y = pygame.mouse.get_pos()
+                    self.dibujar_ficha_arrastrada(
+                        self.ficha_arrastrada,
+                        x - self.offset_x,
+                        y - self.offset_y
+                    )
+                
+                pygame.display.flip()
+                await asyncio.sleep(1 / 60)
+            
+            # Si el juego se cerró, salir del bucle externo
+            if not juego_activo:
                 break
         
         pygame.quit()
         return
 
-    async def bucle_input_nombres(self):
-        """Maneja la pantalla de ingreso de nombres. Retorna False si se cierra."""
-        self.ingresando_nombre = 0
-        while not self.nombres_ingresados:
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    return False
-                
-                elif evento.type == pygame.MOUSEBUTTONDOWN:
-                    self.procesar_click_input(evento)
-                
-                elif evento.type == pygame.KEYDOWN:
-                    if not self.procesar_tecla_input(evento):
-                        return False
-            
-            self.dibujar_input_nombres()
-            self.dibujar_confirmacion_reinicio()
-            pygame.display.flip()
-            await asyncio.sleep(1 / 60)
-        
-        return True
-
-    def procesar_click_input(self, evento):
-        """Procesa clics en la pantalla de input"""
-        x, y = evento.pos
-        centro_x = self.ancho_pantalla // 2
-        centro_y = self.alto_pantalla // 2
-        
-        rect_j1 = pygame.Rect(centro_x - 100, centro_y - 95, 300, 50)
-        rect_j2 = pygame.Rect(centro_x - 100, centro_y - 5, 300, 50)
-        
-        if rect_j1.collidepoint(x, y):
-            self.ingresando_nombre = 1
-            self.nombre_jugador1 = ""
-        elif rect_j2.collidepoint(x, y):
-            self.ingresando_nombre = 2
-            self.nombre_jugador2 = ""
-        else:
-            self.ingresando_nombre = 0
-
-    def procesar_tecla_input(self, evento):
-        """Procesa teclas en la pantalla de input. Retorna False si se cierra."""
-        # Si el cartel de salir está abierto
-        if self.mostrar_confirmacion_salir:
-            if evento.key == pygame.K_s:
-                return False
-            elif evento.key == pygame.K_n:
-                self.mostrar_confirmacion_salir = False
-                return True
-            return True
-        
-        if evento.key == pygame.K_RETURN or evento.key == pygame.K_KP_ENTER:
-            if len(self.nombre_jugador1.strip()) > 0 and len(self.nombre_jugador2.strip()) > 0:
-                self.nombres_ingresados = True
-                self.crear_partida_con_nombres()
-        elif evento.key == pygame.K_BACKSPACE:
-            if self.ingresando_nombre == 1:
-                self.nombre_jugador1 = self.nombre_jugador1[:-1]
-            elif self.ingresando_nombre == 2:
-                self.nombre_jugador2 = self.nombre_jugador2[:-1]
-        elif evento.key == pygame.K_ESCAPE:
-            self.mostrar_confirmacion_salir = True
-        else:
-            if self.ingresando_nombre == 1:
-                self.nombre_jugador1 += evento.unicode
-            elif self.ingresando_nombre == 2:
-                self.nombre_jugador2 += evento.unicode
-        
-        return True
-
-    def crear_partida_con_nombres(self):
-        """Crea la partida con los nombres ingresados"""
-        self.partida = Partida("fichas.csv", fichas_por_jugador=6)
-        self.partida.jugadores[0].nombre = self.nombre_jugador1
-        self.partida.jugadores[1].nombre = self.nombre_jugador2
-        self.ficha_inicial, self.jugador_inicial = self.partida.determinar_ficha_inicial()
-        self.ficha_inicial_colocada = False
-        self.partida.turno = self.partida.jugadores.index(self.jugador_inicial)
-        self.calcular_offset_tablero()
-        self.actualizar_posiciones_fichas()
-        self.actualizar_botones()
-
-    def mostrar_mensaje_inicio(self):
-        """Muestra quién comienza la partida"""
-        if self.jugador_inicial == self.partida.jugadores[0]:
-            nombre = self.nombre_jugador1
-            color = COLOR_JUGADOR1
-        else:
-            nombre = self.nombre_jugador2
-            color = COLOR_JUGADOR2
-        self.mostrar_mensaje(f"Comienza {nombre}!", "info", color)
-
-    async def bucle_juego(self):
-        """Bucle principal del juego. Retorna False si se cierra."""
-        ejecutando = True
-        while ejecutando:
-            for evento in pygame.event.get():
-                if evento.type == pygame.QUIT:
-                    return False
-                
-                elif evento.type == pygame.KEYDOWN:
-                    if not self.procesar_tecla_juego(evento):
-                        return False
-                
-                elif evento.type == pygame.MOUSEBUTTONDOWN:
-                    self.procesar_click_juego(evento)
-                
-                elif evento.type == pygame.MOUSEMOTION:
-                    self.procesar_motion_juego(evento)
-                
-                elif evento.type == pygame.MOUSEBUTTONUP:
-                    self.procesar_soltar_ficha(evento)
-            
-            self.dibujar_juego()
-            pygame.display.flip()
-            await asyncio.sleep(1 / 60)
-        
-        return True
-
-    def procesar_tecla_juego(self, evento):
-        """Procesa teclas en el juego. Retorna False si se cierra."""
-        if self.mostrar_ayuda:
-            self.mostrar_ayuda = False
-            return True
-        
-        if evento.key == pygame.K_ESCAPE:
-            if self.mostrar_confirmacion_reinicio:
-                self.mostrar_confirmacion_reinicio = False
-                self.mensaje_confirmacion = ""
-            elif self.mostrar_confirmacion_salir:
-                pass
-            else:
-                self.mostrar_confirmacion_salir = True
-            return True
-        
-        if evento.key == pygame.K_s:
-            if self.mostrar_confirmacion_reinicio:
-                self.reiniciar_partida()
-                self.mostrar_confirmacion_reinicio = False
-                self.mensaje_confirmacion = ""
-                self.nombres_ingresados = False
-                return False  # Salir del bucle para volver al input
-            elif self.mostrar_confirmacion_salir:
-                return False  # Salir del juego
-        
-        if evento.key == pygame.K_n:
-            if self.mostrar_confirmacion_reinicio:
-                self.mostrar_confirmacion_reinicio = False
-                self.mensaje_confirmacion = ""
-            elif self.mostrar_confirmacion_salir:
-                self.mostrar_confirmacion_salir = False
-            return True
-        
-        if evento.key == pygame.K_g:
-            if self.ficha_seleccionada is not None and not self.partida.terminada:
-                self.ficha_seleccionada.girar_90()
-                if self.sonido_girar:
-                    self.sonido_girar.play()
-                self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_seleccionada.mostrar_valores()}")
-                self.actualizar_posiciones_fichas()
-                self.actualizar_botones()
-        
-        return True
-
-    def procesar_click_juego(self, evento):
-        """Procesa clics en el juego"""
-        if evento.button != 1:
-            return
-        
-        x, y = evento.pos
-        
-        # Botones
-        for boton in self.botones:
-            if boton.click():
-                if boton == self.boton_robar:
-                    self.ejecutar_robar()
-                elif boton == self.boton_pasar:
-                    self.ejecutar_pasar()
-                elif boton == self.boton_reiniciar:
-                    self.mostrar_confirmacion_reinicio = True
-                    self.mensaje_confirmacion = "¿Reiniciar partida? (S/N)"
-                elif boton == self.boton_ayuda:
-                    self.mostrar_ayuda = not self.mostrar_ayuda
-                return
-        
-        # Seleccionar ficha
-        ficha, jugador = self.obtener_ficha_en_posicion(x, y)
-        if ficha is not None and jugador == self.partida.jugador_actual() and not self.partida.terminada:
-            if not self.ficha_inicial_colocada and jugador == self.jugador_inicial:
-                if ficha == self.ficha_inicial:
-                    self.ficha_clickeada = ficha
-                    self.pos_click_x = x
-                    self.pos_click_y = y
-                    self.ficha_arrastrada = None
-                    self.ficha_seleccionada = ficha
-            else:
-                self.ficha_clickeada = ficha
-                self.pos_click_x = x
-                self.pos_click_y = y
-                self.ficha_arrastrada = None
-                self.ficha_seleccionada = ficha
-
-    def ejecutar_robar(self):
-        """Ejecuta la acción de robar del pozo"""
-        if not self.partida.ya_robo_en_turno and not self.partida.terminada and self.ficha_inicial_colocada:
-            ficha = self.partida.robar_ficha()
-            if ficha:
-                if self.sonido_clic:
-                    self.sonido_clic.play()
-                self.ficha_robada_actual = ficha
-                self.ficha_seleccionada = ficha
-                self.mostrar_mensaje(f"📥 {self.partida.jugador_actual().nombre} robó: {ficha.mostrar_valores()}")
-                self.actualizar_posiciones_fichas()
-                self.actualizar_botones()
-            else:
-                self.mostrar_mensaje("❌ No hay fichas en el pozo")
-
-    def ejecutar_pasar(self):
-        """Ejecuta la acción de pasar turno"""
-        if self.partida.ya_robo_en_turno and not self.partida.terminada:
-            if self.sonido_clic:
-                self.sonido_clic.play()
-            self.partida.pasar_turno()
-            self.mostrar_mensaje(f"⏭️ {self.partida.jugador_actual().nombre} pasa turno")
-            self.ficha_seleccionada = None
-            self.ficha_arrastrada = None
-            self.ficha_robada_actual = None
-            self.casillas_destacadas = []
-            self.actualizar_posiciones_fichas()
-            self.actualizar_botones()
-            self.verificar_y_mostrar_fin_partida()
-
-    def procesar_motion_juego(self, evento):
-        """Procesa el movimiento del mouse"""
-        if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
-            dx = evento.pos[0] - self.pos_click_x
-            dy = evento.pos[1] - self.pos_click_y
-            
-            if (dx*dx + dy*dy) > 100:
-                self.ficha_arrastrada = self.ficha_clickeada
-                self.ficha_clickeada = None
-                
-                for pos in self.posiciones_fichas["jugador1"] + self.posiciones_fichas["jugador2"]:
-                    if pos["ficha"] == self.ficha_arrastrada:
-                        self.offset_x = self.pos_click_x - pos["x"]
-                        self.offset_y = self.pos_click_y - pos["y"]
-                        break
-                
-                self.actualizar_posiciones_fichas()
-                self.actualizar_casillas_destacadas(self.ficha_arrastrada, self.partida.jugador_actual())
-                self.mostrar_mensaje(f"📌 Arrastrando: {self.ficha_arrastrada.mostrar_valores()}")
-        
-        if self.ficha_arrastrada is not None and not self.partida.terminada:
-            self.actualizar_casillas_destacadas(self.ficha_arrastrada, self.partida.jugador_actual())
-
-    def procesar_soltar_ficha(self, evento):
-        """Procesa cuando se suelta el mouse (colocar ficha)"""
-        if evento.button != 1:
-            return
-        
-        # Si se hizo clic para girar
-        if hasattr(self, 'ficha_clickeada') and self.ficha_clickeada is not None and not self.partida.terminada:
-            self.ficha_clickeada.girar_90()
-            if self.sonido_girar:
-                self.sonido_girar.play()
-            self.offset_x = 0
-            self.offset_y = 0
-            self.mostrar_mensaje(f"🔄 Ficha girada: {self.ficha_clickeada.mostrar_valores()}")
-            self.actualizar_posiciones_fichas()
-            self.actualizar_botones()
-            self.ficha_clickeada = None
-            self.ficha_seleccionada = None
-            return
-        
-        # Si hay ficha arrastrada
-        if self.ficha_arrastrada is None or self.partida.terminada:
-            return
-        
-        x, y = evento.pos
-        casilla = self.obtener_casilla_en_posicion(x, y)
-        
-        if not casilla or casilla.ficha is not None:
-            if casilla and casilla.ficha is not None:
-                self.mostrar_mensaje("❌ Esa casilla ya está ocupada")
-            else:
-                self.mostrar_mensaje("❌ Soltar en una casilla")
-            self.limpiar_estado_arrastre()
-            return
-        
-        # Primera jugada
-        if self.partida.tablero.primera_jugada:
-            self.colocar_primera_ficha(casilla)
-        else:
-            self.colocar_ficha_normal(casilla)
-        
-        self.limpiar_estado_arrastre()
-
-    def colocar_primera_ficha(self, casilla):
-        """Coloca la ficha en la primera jugada"""
-        if self.ficha_arrastrada.orientacion != casilla.orientacion:
-            self.mostrar_mensaje(f"❌ La ficha es {self.ficha_arrastrada.orientacion} pero la casilla es {casilla.orientacion}")
-            return
-        
-        exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
-        if exito:
-            self.mostrar_exito_colocacion()
-        else:
-            self.mostrar_mensaje("❌ No se pudo colocar la ficha")
-
-    def colocar_ficha_normal(self, casilla):
-        """Coloca la ficha en jugadas normales (HEAD/TAIL)"""
-        head = self.partida.tablero.head_posible.casilla
-        tail = self.partida.tablero.tail_posible.casilla
-        
-        if casilla.numero != head.numero and casilla.numero != tail.numero:
-            self.mostrar_mensaje("❌ Solo se puede colocar en HEAD o TAIL")
-            return
-        
-        if self.ficha_arrastrada.orientacion != casilla.orientacion:
-            self.mostrar_mensaje(f"❌ La ficha es {self.ficha_arrastrada.orientacion} pero la casilla es {casilla.orientacion}")
-            return
-        
-        posible, _ = self.partida.tablero.puede_colocar(self.ficha_arrastrada, casilla)
-        if not posible:
-            self.mostrar_mensaje("❌ La ficha no encaja en ese extremo")
-            if self.sonido_error:
-                self.sonido_error.play()
-            return
-        
-        exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
-        if exito:
-            self.mostrar_exito_colocacion()
-        else:
-            self.mostrar_mensaje("❌ No se pudo colocar la ficha")
-
-    def mostrar_exito_colocacion(self):
-        """Muestra el mensaje de éxito al colocar una ficha"""
-        if self.sonido_coin:
-            self.sonido_coin.play()
-        
-        if self.ficha_arrastrada == self.ficha_inicial and not self.ficha_inicial_colocada:
-            self.ficha_inicial_colocada = True
-            self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó la ficha inicial!")
-        else:
-            self.mostrar_mensaje(f"✅ {self.partida.jugador_actual().nombre} colocó {self.ficha_arrastrada.mostrar_valores()}")
-        
-        self.ficha_robada_actual = None
-        self.actualizar_posiciones_fichas()
-        self.actualizar_botones()
-        self.verificar_y_mostrar_fin_partida()
-
-    def limpiar_estado_arrastre(self):
-        """Limpia el estado de arrastre"""
-        self.ficha_arrastrada = None
-        self.ficha_seleccionada = None
-        self.casillas_destacadas = []
-        self.actualizar_posiciones_fichas()
-        self.actualizar_botones()
-        self.ficha_clickeada = None
-
-    def dibujar_juego(self):
-        """Dibuja todos los elementos del juego"""
-        self.pantalla.fill(COLOR_FONDO)
-        
-        self.dibujar_mensajes()
-        self.dibujar_pozo()
-        self.dibujar_tablero()
-        
-        # Etiquetas de jugadores
-        self.dibujar_etiquetas_jugadores()
-        
-        # Fichas de los jugadores
-        self.dibujar_fichas_mano()
-        
-        # Botones
-        for boton in self.botones:
-            boton.dibujar(self.pantalla, self.fuente)
-        
-        # Carteles
-        self.dibujar_ayuda_cartel()
-        self.dibujar_confirmacion_reinicio()
-        
-        # Ficha arrastrada (encima de todo)
-        if self.ficha_arrastrada is not None:
-            x, y = pygame.mouse.get_pos()
-            self.dibujar_ficha_arrastrada(
-                self.ficha_arrastrada,
-                x - self.offset_x,
-                y - self.offset_y
-            )
-
-    def dibujar_etiquetas_jugadores(self):
-        """Dibuja las etiquetas de los jugadores"""
-        texto_j1 = self.fuente.render(self.nombre_jugador1, True, COLOR_JUGADOR1)
-        x_j1 = int(30 * self.escala)
-        y_j1 = int(50 * self.escala)
-        self.pantalla.blit(texto_j1, (x_j1, y_j1))
-        
-        texto_j2 = self.fuente.render(self.nombre_jugador2, True, COLOR_JUGADOR2)
-        x_j2 = self.ancho_pantalla - int(30 * self.escala) - texto_j2.get_width()
-        y_j2 = int(50 * self.escala)
-        self.pantalla.blit(texto_j2, (x_j2, y_j2))
-
-    def dibujar_fichas_mano(self):
-        """Dibuja las fichas de los jugadores"""
-        jugador_actual = self.partida.jugador_actual()
-        
-        for jugador_id, posiciones in self.posiciones_fichas.items():
-            if jugador_id == "jugador1":
-                jugador = self.partida.jugadores[0]
-                es_turno = (jugador_actual == jugador)
-            else:
-                jugador = self.partida.jugadores[1]
-                es_turno = (jugador_actual == jugador)
-            
-            for pos in posiciones:
-                es_seleccionada = pos["ficha"] == self.ficha_seleccionada and pos["ficha"] != self.ficha_arrastrada
-                self.dibujar_ficha_mano(
-                    pos["ficha"],
-                    pos["x"], pos["y"],
-                    seleccionada=es_seleccionada,
-                    jugador=jugador,
-                    es_turno=es_turno
-                )
 
 
 
