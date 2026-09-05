@@ -208,7 +208,7 @@ class JuegoPygame:
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)
-            
+            self.ruta_fuente = ruta_fuente
             self.fuente = pygame.font.Font(ruta_fuente, self.tamano_fuente)
             self.fuente_grande = pygame.font.Font(ruta_fuente, self.tamano_fuente_grande)
             self.fuente_fraccion = pygame.font.Font(ruta_fuente, self.tamano_fuente_fraccion)
@@ -256,6 +256,7 @@ class JuegoPygame:
             self.sonido_girar = pygame.mixer.Sound(os.path.join(sonidos_dir, "girar.mp3"))
             self.sonido_clic = pygame.mixer.Sound(os.path.join(sonidos_dir, "clic.mp3"))
             self.sonido_coin = pygame.mixer.Sound(os.path.join(sonidos_dir, "coin.mp3"))
+            self.sonido_error = pygame.mixer.Sound(os.path.join(sonidos_dir, "error.mp3"))
             
             print("✅ Sonidos cargados correctamente")
 
@@ -272,6 +273,7 @@ class JuegoPygame:
             self.sonido_girar = None
             self.sonido_clic = None
             self.sonido_coin = None
+            self.sonido_error = None
 
     def calcular_offset_tablero(self):
         min_x = float('inf')
@@ -429,6 +431,74 @@ class JuegoPygame:
             if pos:
                 self.posiciones_fichas["jugador2"].append(pos)
 
+    def dibujar_valores_ficha(self, ficha, x, y, ancho, alto, factor=1.0):
+            s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+            s.fill((255, 255, 255, 180))
+            self.pantalla.blit(s, (x, y))
+            
+            espacio_al_borde = int(5*factor)
+            grosor_linea = int(2*factor)
+
+            if ficha.orientacion == "horizontal":
+                pygame.draw.line(self.pantalla, (80, 80, 80), 
+                               (x + ancho//2, y + espacio_al_borde), 
+                               (x + ancho//2, y + alto - espacio_al_borde), grosor_linea)
+            else:
+                pygame.draw.line(self.pantalla, (80, 80, 80), 
+                               (x + espacio_al_borde, y + alto//2), 
+                               (x + ancho - espacio_al_borde, y + alto//2), grosor_linea)
+            
+            tamano_fuente_escalado = int(self.tamano_fuente_fraccion * factor)
+            fuente_escalada = pygame.font.Font(self.ruta_fuente, tamano_fuente_escalado)
+
+            def dibujar_fraccion(texto, x_centro, y_centro):
+                if "/" in texto:
+                    num, den = texto.split("/")
+                else:
+                    num = texto
+                    den = ""
+                
+                texto_num = fuente_escalada.render(num, True, (0, 0, 0)) if num else None
+                texto_den = fuente_escalada.render(den, True, (0, 0, 0)) if den else None
+                
+                alto_num = texto_num.get_height() if texto_num else 0
+                alto_den = texto_den.get_height() if texto_den else 0
+                
+                separacion_entre_lineas = -5*factor
+                
+                ancho_num = texto_num.get_width() if texto_num else 0
+                ancho_den = texto_den.get_width() if texto_den else 0
+                ancho_max = max(ancho_num, ancho_den)
+                
+                ancho_linea = int(ancho_max * 1)
+                alto_linea = 2*factor
+                
+                alto_total = alto_num + alto_den + separacion_entre_lineas + alto_linea
+                
+                y_inicio = y_centro - alto_total // 2
+                
+                if texto_num:
+                    self.pantalla.blit(texto_num, 
+                        (x_centro - texto_num.get_width() // 2, 
+                         y_inicio))
+                
+                y_linea = y_inicio + alto_num + separacion_entre_lineas // 2
+                pygame.draw.rect(self.pantalla, (0, 0, 0), 
+                                (x_centro - ancho_linea // 2, y_linea, ancho_linea, alto_linea))
+                
+                if texto_den:
+                    y_den = y_linea + alto_linea + separacion_entre_lineas // 2
+                    self.pantalla.blit(texto_den, 
+                        (x_centro - texto_den.get_width() // 2, 
+                         y_den))
+            
+            if ficha.orientacion == "horizontal":
+                dibujar_fraccion(ficha.textos["O"], x + ancho//4, y + alto//2)
+                dibujar_fraccion(ficha.textos["E"], x + 3 * ancho//4, y + alto//2)
+            else:
+                dibujar_fraccion(ficha.textos["N"], x + ancho//2, y + alto//4)
+                dibujar_fraccion(ficha.textos["S"], x + ancho//2, y + 3 * alto//4)
+    '''
     def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
         s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
         s.fill((255, 255, 255, 180))
@@ -490,10 +560,15 @@ class JuegoPygame:
         else:
             dibujar_fraccion(ficha.textos["N"], x + ancho//2, y + alto//4)
             dibujar_fraccion(ficha.textos["S"], x + ancho//2, y + 3 * alto//4)
+    '''
 
     def dibujar_ficha_tablero(self, ficha, x, y, ancho, alto, resaltada=False):
         if self.img_frente is not None:
-            img = pygame.transform.scale(self.img_frente, (ancho, alto))
+            if ficha.orientacion == "vertical":
+                img = pygame.transform.scale(self.img_frente_v, (ancho, alto))
+            else:
+                img = pygame.transform.scale(self.img_frente, (ancho, alto))
+
             self.pantalla.blit(img, (x, y))
             
             if resaltada:
@@ -580,6 +655,7 @@ class JuegoPygame:
                 return
 
     def dibujar_ficha_arrastrada(self, ficha, x, y):
+        factor = 1.5
         if ficha.orientacion == "horizontal":
             ancho = self.largo_ficha
             alto = self.ancho_ficha
@@ -591,18 +667,22 @@ class JuegoPygame:
             dx = (self.largo_ficha - self.ancho_ficha) // 2
             dy = (self.ancho_ficha - self.largo_ficha) // 2
         
+        ancho, alto = ancho*factor, alto*factor
+        dx, dy = dx*factor, dy*factor
+
         if self.img_frente is not None:
             if ficha.orientacion == "vertical":
                 img = self.img_frente_v
             else:
                 img = self.img_frente
+            img = pygame.transform.scale(img, (ancho, alto))
 
             self.pantalla.blit(img, (x + dx, y + dy))
             
             pygame.draw.rect(self.pantalla, (200, 255, 200), (x + dx, y + dy, ancho, alto), 
                            max(2, int(4 * self.escala)), border_radius=5)
             
-            self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto)
+            self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto, factor=factor)
             return
         
         color = (200, 255, 200)
@@ -1283,6 +1363,8 @@ class JuegoPygame:
                                                     self.mostrar_mensaje("❌ No se pudo colocar la ficha")
                                             else:
                                                 self.mostrar_mensaje("❌ La ficha no encaja en ese extremo")
+                                                if self.sonido_error:
+                                                    self.sonido_error.play()
                                         else:
                                             self.mostrar_mensaje("❌ Solo se puede colocar en HEAD o TAIL")
                                 else:
