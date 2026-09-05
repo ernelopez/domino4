@@ -225,20 +225,17 @@ class JuegoPygame:
             assets_dir = os.path.join(script_dir, "assets")
             sonidos_dir = os.path.join(script_dir, "sonidos")
             
-            ruta_frente = os.path.join(assets_dir, "ficha.png")
-            ruta_frente_v = os.path.join(assets_dir, "ficha_v.png")
-            ruta_dorso = os.path.join(assets_dir, "dorso.png")
-            ruta_dorso_v = os.path.join(assets_dir, "dorso_v.png")
+            # Cargar imágenes sin escalar (tamaño original)
+            self.img_frente_original = pygame.image.load(os.path.join(assets_dir, "ficha.png"))
+            self.img_frente_v_original = pygame.image.load(os.path.join(assets_dir, "ficha_v.png"))
+            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso.png"))
+            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso_v.png"))
             
-            self.img_frente = pygame.image.load(ruta_frente)
-            self.img_frente_v = pygame.image.load(ruta_frente_v)
-            self.img_dorso = pygame.image.load(ruta_dorso)
-            self.img_dorso_v = pygame.image.load(ruta_dorso_v)
-            
-            self.img_frente = pygame.transform.scale(self.img_frente, (self.largo_ficha, self.ancho_ficha))
-            self.img_frente_v = pygame.transform.scale(self.img_frente_v, (self.ancho_ficha, self.largo_ficha))
-            self.img_dorso = pygame.transform.scale(self.img_dorso, (self.largo_ficha, self.ancho_ficha))
-            self.img_dorso_v = pygame.transform.scale(self.img_dorso_v, (self.ancho_ficha, self.largo_ficha))
+            # Escalar al tamaño normal para la mano y tablero
+            self.img_frente = pygame.transform.scale(self.img_frente_original, (self.largo_ficha, self.ancho_ficha))
+            self.img_frente_v = pygame.transform.scale(self.img_frente_v_original, (self.ancho_ficha, self.largo_ficha))
+            self.img_dorso = pygame.transform.scale(self.img_dorso_original, (self.largo_ficha, self.ancho_ficha))
+            self.img_dorso_v = pygame.transform.scale(self.img_dorso_v_original, (self.ancho_ficha, self.largo_ficha))
             
             ruta_boton_robar = os.path.join(assets_dir, "boton_robar.png")
             ruta_boton_pasar = os.path.join(assets_dir, "boton_pasar.png")
@@ -498,70 +495,7 @@ class JuegoPygame:
             else:
                 dibujar_fraccion(ficha.textos["N"], x + ancho//2, y + alto//4)
                 dibujar_fraccion(ficha.textos["S"], x + ancho//2, y + 3 * alto//4)
-    '''
-    def dibujar_valores_ficha(self, ficha, x, y, ancho, alto):
-        s = pygame.Surface((ancho, alto), pygame.SRCALPHA)
-        s.fill((255, 255, 255, 180))
-        self.pantalla.blit(s, (x, y))
-        
-        if ficha.orientacion == "horizontal":
-            pygame.draw.line(self.pantalla, (80, 80, 80), 
-                           (x + ancho//2, y + 5), 
-                           (x + ancho//2, y + alto - 5), 2)
-        else:
-            pygame.draw.line(self.pantalla, (80, 80, 80), 
-                           (x + 5, y + alto//2), 
-                           (x + ancho - 5, y + alto//2), 2)
-        
-        def dibujar_fraccion(texto, x_centro, y_centro):
-            if "/" in texto:
-                num, den = texto.split("/")
-            else:
-                num = texto
-                den = ""
-            
-            texto_num = self.fuente_fraccion.render(num, True, (0, 0, 0)) if num else None
-            texto_den = self.fuente_fraccion.render(den, True, (0, 0, 0)) if den else None
-            
-            alto_num = texto_num.get_height() if texto_num else 0
-            alto_den = texto_den.get_height() if texto_den else 0
-            
-            separacion_entre_lineas = -5
-            
-            ancho_num = texto_num.get_width() if texto_num else 0
-            ancho_den = texto_den.get_width() if texto_den else 0
-            ancho_max = max(ancho_num, ancho_den)
-            
-            ancho_linea = int(ancho_max * 1)
-            alto_linea = 2
-            
-            alto_total = alto_num + alto_den + separacion_entre_lineas + alto_linea
-            
-            y_inicio = y_centro - alto_total // 2
-            
-            if texto_num:
-                self.pantalla.blit(texto_num, 
-                    (x_centro - texto_num.get_width() // 2, 
-                     y_inicio))
-            
-            y_linea = y_inicio + alto_num + separacion_entre_lineas // 2
-            pygame.draw.rect(self.pantalla, (0, 0, 0), 
-                            (x_centro - ancho_linea // 2, y_linea, ancho_linea, alto_linea))
-            
-            if texto_den:
-                y_den = y_linea + alto_linea + separacion_entre_lineas // 2
-                self.pantalla.blit(texto_den, 
-                    (x_centro - texto_den.get_width() // 2, 
-                     y_den))
-        
-        if ficha.orientacion == "horizontal":
-            dibujar_fraccion(ficha.textos["O"], x + ancho//4, y + alto//2)
-            dibujar_fraccion(ficha.textos["E"], x + 3 * ancho//4, y + alto//2)
-        else:
-            dibujar_fraccion(ficha.textos["N"], x + ancho//2, y + alto//4)
-            dibujar_fraccion(ficha.textos["S"], x + ancho//2, y + 3 * alto//4)
-    '''
-
+    
     def dibujar_ficha_tablero(self, ficha, x, y, ancho, alto, resaltada=False):
         if self.img_frente is not None:
             if ficha.orientacion == "vertical":
@@ -672,9 +606,9 @@ class JuegoPygame:
 
         if self.img_frente is not None:
             if ficha.orientacion == "vertical":
-                img = self.img_frente_v
+                img = self.img_frente_v_original
             else:
-                img = self.img_frente
+                img = self.img_frente_original
             img = pygame.transform.scale(img, (ancho, alto))
 
             self.pantalla.blit(img, (x + dx, y + dy))
@@ -971,34 +905,7 @@ class JuegoPygame:
         self.ingresando_nombre = 0
         
         self.mostrar_mensaje("Partida reiniciada")
-    '''
-    def reiniciar_partida(self):
-        self.partida = Partida("fichas.csv", fichas_por_jugador=6)
-        self.ficha_inicial, self.jugador_inicial = self.partida.determinar_ficha_inicial()
-        self.ficha_inicial_colocada = False
-        
-        # Forzar el turno al jugador que comienza
-        self.partida.turno = self.partida.jugadores.index(self.jugador_inicial)
-        
-        self.ficha_seleccionada = None
-        self.ficha_arrastrada = None
-        self.ficha_robada_actual = None
-        self.ficha_clickeada = None
-        self.casillas_destacadas = []
-        self.mensaje = ""
-        self.tiempo_mensaje = 0
-        self.offset_x = 0
-        self.offset_y = 0
-        
-        self.calcular_offset_tablero()
-        self.actualizar_posiciones_fichas()
-        self.actualizar_botones()
-        
-        self.partida.jugadores[0].nombre = self.nombre_jugador1
-        self.partida.jugadores[1].nombre = self.nombre_jugador2
-        
-        self.mostrar_mensaje("Partida reiniciada")
-    '''
+    
 
     def dibujar_confirmacion_reinicio(self):
         if not self.mostrar_confirmacion_reinicio:
