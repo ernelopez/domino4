@@ -229,8 +229,8 @@ class JuegoPygame:
             # Cargar imágenes sin escalar (tamaño original)
             self.img_frente_original = pygame.image.load(os.path.join(assets_dir, "ficha.png"))
             self.img_frente_v_original = pygame.image.load(os.path.join(assets_dir, "ficha_v.png"))
-            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso.png"))
-            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso_v.png"))
+            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso5.png"))
+            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso5_v.png"))
             
             # Escalar al tamaño normal para la mano y tablero
             self.img_frente = pygame.transform.scale(self.img_frente_original, (self.largo_ficha, self.ancho_ficha))
@@ -651,7 +651,7 @@ class JuegoPygame:
         centro_y = self.alto_pantalla // 2
         
         por_fila = 6
-        separacion = int(3 * self.escala)
+        separacion = int(5 * self.escala)
         ancho = self.ancho_ficha
         alto = self.largo_ficha
         
@@ -1147,7 +1147,7 @@ class JuegoPygame:
                 self.mostrar_confirmacion_reinicio = False
                 self.mensaje_confirmacion = ""
                 self.nombres_ingresados = False
-                return False  # Salir del bucle para volver al input
+                return True  # Salir del bucle para volver al input
             elif self.mostrar_confirmacion_salir:
                 return False  # Salir del juego
         
