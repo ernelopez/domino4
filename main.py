@@ -904,6 +904,9 @@ class JuegoPygame:
         self.volver_a_input = True
         self.nombres_ingresados = False
         self.ingresando_nombre = 0
+
+        # FORZAR EL TURNO AL JUGADOR QUE COMIENZA
+        self.partida.turno = self.partida.jugadores.index(self.jugador_inicial)
         
         self.mostrar_mensaje("Partida reiniciada")
     
