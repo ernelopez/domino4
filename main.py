@@ -38,7 +38,7 @@ class Boton:
     
     def dibujar(self, pantalla, fuente):
         if self.imagen is not None:
-            img = pygame.transform.scale(self.imagen, (self.rect.width, self.rect.height))
+            img = pygame.transform.smoothscale(self.imagen, (self.rect.width, self.rect.height))
             pantalla.blit(img, (self.rect.x, self.rect.y))
         else:
             color = self.color_hover if self.esta_sobre() and self.activo else self.color
@@ -150,17 +150,17 @@ class JuegoPygame:
         
         # Título
         titulo_juego = self.fuente_grande.render("Dominó de equivalencias", True, (255, 255, 200))
-        self.pantalla.blit(titulo_juego, (centro_x - titulo_juego.get_width() // 2, centro_y - 350))
+        self.pantalla.blit(titulo_juego, (centro_x - titulo_juego.get_width() // 2, centro_y - 450))
         
         # Subtítulo
         subtitulo = fuente_input.render("Ingresá los nombres de los jugadores", True, (255, 255, 255))
-        self.pantalla.blit(subtitulo, (centro_x - subtitulo.get_width() // 2, centro_y - 200))
+        self.pantalla.blit(subtitulo, (centro_x - subtitulo.get_width() // 2, centro_y - 300))
         
         # Jugador 1
         texto_j1 = fuente_input.render("Jugador 1:", True, COLOR_JUGADOR1)
-        self.pantalla.blit(texto_j1, (centro_x - 350, centro_y - 80))
+        self.pantalla.blit(texto_j1, (centro_x - 350, centro_y - 180))
         
-        rect_j1 = pygame.Rect(centro_x - 80, centro_y - 110, 350, 80)
+        rect_j1 = pygame.Rect(centro_x - 80, centro_y - 210, 350, 80)
         if self.ingresando_nombre == 1:
             pygame.draw.rect(self.pantalla, (200, 200, 200), rect_j1, 3)
         else:
@@ -171,10 +171,10 @@ class JuegoPygame:
         
         # Jugador 2
         texto_j2 = fuente_input.render("Jugador 2:", True, COLOR_JUGADOR2)
-        self.pantalla.blit(texto_j2, (centro_x - 350, centro_y + 10))
+        self.pantalla.blit(texto_j2, (centro_x - 350, centro_y - 90))
         
         
-        rect_j2 = pygame.Rect(centro_x - 80, centro_y - 15, 350, 80)
+        rect_j2 = pygame.Rect(centro_x - 80, centro_y - 115, 350, 80)
         if self.ingresando_nombre == 2:
             pygame.draw.rect(self.pantalla, (200, 200, 200), rect_j2, 3)
         else:
@@ -184,8 +184,32 @@ class JuegoPygame:
         
         # Instrucciones
         instrucciones = fuente_input.render("Hacé clic en una caja para editarla. Presioná ENTER para comenzar.", True, (200, 200, 200))
-        self.pantalla.blit(instrucciones, (centro_x - instrucciones.get_width() // 2, centro_y + 130))    
+        self.pantalla.blit(instrucciones, (centro_x - instrucciones.get_width() // 2, centro_y + 30))  
 
+        # ============================================
+        # LOGOS
+        # ============================================
+        escala_eef = 0.2 * self.escala   # Ajustá este valor
+        escala_baa = 0.2 * self.escala   # Ajustá este valor
+
+        ancho_eef = int(self.img_eef.get_width() * escala_eef)
+        alto_eef = int(self.img_eef.get_height() * escala_eef)
+        ancho_baa = int(self.img_baa.get_width() * escala_baa)
+        alto_baa = int(self.img_baa.get_height() * escala_baa)
+
+        #img_eef = pygame.transform.scale(self.img_eef, (ancho_eef, alto_eef))
+        #img_baa = pygame.transform.scale(self.img_baa, (ancho_baa, alto_baa))
+        img_eef = pygame.transform.smoothscale(self.img_eef, (ancho_eef, alto_eef))
+        img_baa = pygame.transform.smoothscale(self.img_baa, (ancho_baa, alto_baa))
+        
+        separacion = int(10 * self.escala)
+        centro_x = self.ancho_pantalla // 2
+
+        # Posición vertical
+        y_imagenes = self.alto_pantalla - int(220 * self.escala)
+
+        self.pantalla.blit(img_eef, (centro_x - ancho_eef // 2, y_imagenes))
+        self.pantalla.blit(img_baa, (centro_x - ancho_baa // 2, y_imagenes + alto_baa + separacion))        
     
     def recalcular_tamanos(self):
         BASE_ANCHO = ANCHO_PANTALLA
@@ -231,12 +255,14 @@ class JuegoPygame:
             self.img_frente_v_original = pygame.image.load(os.path.join(assets_dir, "ficha_v.png"))
             self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso5.png"))
             self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso5_v.png"))
-            
+            self.img_eef = pygame.image.load(os.path.join(assets_dir, "EEF.png"))
+            self.img_baa = pygame.image.load(os.path.join(assets_dir, "BAA.png"))
+
             # Escalar al tamaño normal para la mano y tablero
-            self.img_frente = pygame.transform.scale(self.img_frente_original, (self.largo_ficha, self.ancho_ficha))
-            self.img_frente_v = pygame.transform.scale(self.img_frente_v_original, (self.ancho_ficha, self.largo_ficha))
-            self.img_dorso = pygame.transform.scale(self.img_dorso_original, (self.largo_ficha, self.ancho_ficha))
-            self.img_dorso_v = pygame.transform.scale(self.img_dorso_v_original, (self.ancho_ficha, self.largo_ficha))
+            self.img_frente = pygame.transform.smoothscale(self.img_frente_original, (self.largo_ficha, self.ancho_ficha))
+            self.img_frente_v = pygame.transform.smoothscale(self.img_frente_v_original, (self.ancho_ficha, self.largo_ficha))
+            self.img_dorso = pygame.transform.smoothscale(self.img_dorso_original, (self.largo_ficha, self.ancho_ficha))
+            self.img_dorso_v = pygame.transform.smoothscale(self.img_dorso_v_original, (self.ancho_ficha, self.largo_ficha))
             
             ruta_boton_robar = os.path.join(assets_dir, "boton_robar.png")
             ruta_boton_pasar = os.path.join(assets_dir, "boton_pasar.png")
@@ -272,6 +298,8 @@ class JuegoPygame:
             self.sonido_clic = None
             self.sonido_coin = None
             self.sonido_error = None
+            self.img_eef = None
+            self.img_baa = None
 
     def calcular_offset_tablero(self):
         min_x = float('inf')
@@ -1004,8 +1032,14 @@ class JuegoPygame:
             
             # --- BUCLE DEL JUEGO ---
             if not await self.bucle_juego():
-                break
-        
+                # Si salió del juego, verificar si fue por reinicio o por cierre
+                if self.nombres_ingresados == False:
+                    # Reinicio: continuar el bucle externo para volver al input
+                    continue
+                else:
+                    # Cierre: salir del bucle externo
+                    break
+            
         pygame.quit()
         return
 
@@ -1037,8 +1071,8 @@ class JuegoPygame:
         centro_x = self.ancho_pantalla // 2
         centro_y = self.alto_pantalla // 2
         
-        rect_j1 = pygame.Rect(centro_x - 100, centro_y - 95, 300, 50)
-        rect_j2 = pygame.Rect(centro_x - 100, centro_y - 5, 300, 50)
+        rect_j1 = pygame.Rect(centro_x - 80, centro_y - 210, 350, 80)
+        rect_j2 = pygame.Rect(centro_x - 80, centro_y - 115, 350, 80)
         
         if rect_j1.collidepoint(x, y):
             self.ingresando_nombre = 1
@@ -1150,7 +1184,7 @@ class JuegoPygame:
                 self.mostrar_confirmacion_reinicio = False
                 self.mensaje_confirmacion = ""
                 self.nombres_ingresados = False
-                return True  # Salir del bucle para volver al input
+                return False  # Salir del bucle para volver al input
             elif self.mostrar_confirmacion_salir:
                 return False  # Salir del juego
         
