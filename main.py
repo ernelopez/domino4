@@ -975,49 +975,66 @@ class JuegoPygame:
         s.fill((0, 0, 0, 180))
         self.pantalla.blit(s, (0, 0))
         
-        ancho_cartel = int(500 * self.escala)
-        alto_cartel = int(400 * self.escala)
+        ancho_cartel = int(950 * self.escala)
+        alto_cartel = int(600 * self.escala)
         x_cartel = (self.ancho_pantalla - ancho_cartel) // 2
         y_cartel = (self.alto_pantalla - alto_cartel) // 2
         
         pygame.draw.rect(self.pantalla, (50, 50, 50), (x_cartel, y_cartel, ancho_cartel, alto_cartel), border_radius=10)
         pygame.draw.rect(self.pantalla, (150, 150, 150), (x_cartel, y_cartel, ancho_cartel, alto_cartel), 2, border_radius=10)
         
-        titulo = self.fuente_grande.render("🎲 Instrucciones", True, (255, 255, 255))
+        titulo = self.fuente_grande.render("Instrucciones", True, (255, 255, 255))
         self.pantalla.blit(titulo, (self.ancho_pantalla // 2 - titulo.get_width() // 2, y_cartel + int(20 * self.escala)))
         
         pygame.draw.line(self.pantalla, (150, 150, 150), 
                         (x_cartel + int(20 * self.escala), y_cartel + int(65 * self.escala)),
                         (x_cartel + ancho_cartel - int(20 * self.escala), y_cartel + int(65 * self.escala)), 1)
         
+        fuente_instrucciones = pygame.font.Font(self.ruta_fuente, int(24 * self.escala))
+    
+ 
+
+#Gana el jugador que se quede sin fichas primero. Si un jugador no puede colocar y el pozo está vacío, pierde.
+
         instrucciones = [
-            "Objetivo: Colocar todas tus fichas",
-            "Girá una ficha: hacé clic en ella o apretá G",
-            "Robá del pozo con el botón celeste",
-            "Pasá el turno cuando no puedas jugar",
+            "1. Cada jugador recibe 6 fichas.",
+            "",
+            "2. Comienza el jugador que tenga la mayor ficha con dos expresiones equivalentes.",
+            "",
+            "3. En su turno, cada jugador debe colocar una ficha que tenga un número.",
+            "equivalente al que aparece en alguno de los extremos de la cadena.",
+            "Podés girar una ficha haciendo clic sobre ella o con la tecla G.",
+            "",
+            "4. Si no podés ubicar ninguna ficha, debés robar una ficha del pozo (botón celeste).",
+            "Si la ficha robada sirve, podés colocarla inmediatamente.",
+            "Si no sirve, tenés que pasar el turno al siguiente jugador (botón verde).",
+            "",
+            "5. Final del juego: gana el jugador que se quede sin fichas primero.",
+            "Si un jugador no puede colocar y el pozo está vacío, pierde."
         ]
-        
+
         y_texto = y_cartel + int(85 * self.escala)
         for linea in instrucciones:
-            texto = self.fuente.render(linea, True, (220, 220, 220))
+            texto = fuente_instrucciones.render(linea, True, (220, 220, 220))
             self.pantalla.blit(texto, (x_cartel + int(25 * self.escala), y_texto))
-            y_texto += int(35 * self.escala)
+            y_texto += int(28 * self.escala)
         
+        # Separador y desarrollador
         y_texto += int(10 * self.escala)
         pygame.draw.line(self.pantalla, (100, 100, 100), 
                         (x_cartel + int(20 * self.escala), y_texto),
                         (x_cartel + ancho_cartel - int(20 * self.escala), y_texto), 1)
         y_texto += int(20 * self.escala)
         
-        desarrollador = self.fuente.render("Desarrollado por: Ernesto López", True, (180, 180, 180))
+        desarrollador = self.fuente.render("Desarrollado por: Ernesto López", True, (255, 255, 200))
         self.pantalla.blit(desarrollador, (self.ancho_pantalla // 2 - desarrollador.get_width() // 2, y_texto))
         y_texto += int(35 * self.escala)
-
-        linea_extra = self.fuente.render("Escuelas en Foco, BA", True, (180, 180, 180))
+        
+        linea_extra = self.fuente.render("Escuelas en Foco, Ciudad de Buenos Aires", True, (255, 255, 200))
         self.pantalla.blit(linea_extra, (self.ancho_pantalla // 2 - linea_extra.get_width() // 2, y_texto))
         
         cerrar = self.fuente.render("Presioná cualquier tecla para cerrar", True, (150, 150, 150))
-        self.pantalla.blit(cerrar, (self.ancho_pantalla // 2 - cerrar.get_width() // 2, y_cartel + alto_cartel - int(35 * self.escala)))
+        self.pantalla.blit(cerrar, (self.ancho_pantalla // 2 - cerrar.get_width() // 2, y_cartel + alto_cartel - int(25 * self.escala)))
 
     async def ejecutar(self):
         juego_activo = True
