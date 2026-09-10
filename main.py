@@ -12,13 +12,14 @@ COLOR_FONDO = (40, 40, 40)
 COLOR_BOTON = (70, 70, 70)
 COLOR_BOTON_HOVER = (100, 100, 100)
 COLOR_TEXTO_BOTON = (255, 255, 255)
-COLOR_CASILLA_VACIA = (255, 182, 193)  # Rosa claro
+COLOR_CASILLA_VACIA = (255, 255, 200)  # Rosa claro (255, 182, 193)
 COLOR_CASILLA_DESTACADA = (50, 200, 50)
 
 # Colores de jugadores
 COLOR_JUGADOR1 = (200, 100, 100)  # Rojo suave
 COLOR_JUGADOR2 = (100, 150, 220)  # Azul suave
 COLOR_TEXTO = (255, 255, 255)
+COLOR_TITULO = (255, 255, 200)
 
 ANCHO_PANTALLA = 1200
 ALTO_PANTALLA = 750
@@ -137,6 +138,9 @@ class JuegoPygame:
 
         self.volver_a_input = False
         self.mostrar_confirmacion_salir = False
+
+        self.cambio_regla_error = False  # True: pasa turno si no encaja | False: comportamiento viejo
+
         
     def dibujar_input_nombres(self):
         self.pantalla.fill(COLOR_FONDO)
@@ -149,7 +153,7 @@ class JuegoPygame:
         fuente_input = pygame.font.Font(ruta_fuente, int(32 * self.escala))
         
         # Título
-        titulo_juego = self.fuente_grande.render("Dominó de equivalencias", True, (255, 255, 200))
+        titulo_juego = self.fuente_grande.render("Dominó de equivalencias", True, COLOR_TITULO)
         self.pantalla.blit(titulo_juego, (centro_x - titulo_juego.get_width() // 2, centro_y - 450))
         
         # Subtítulo
@@ -843,6 +847,17 @@ class JuegoPygame:
         
         return False
 
+    def mostrar_mensaje(self, texto, tipo="info", color=None, visible=False):
+        if visible:
+            self.mensaje = texto
+            self.tiempo_mensaje = pygame.time.get_ticks()
+            if color:
+                self.mensaje_color = color
+            else:
+                self.mensaje_color = COLOR_TEXTO
+        # Si no es visible, no guarda nada
+
+    '''
     def mostrar_mensaje(self, texto, tipo="info", color=None):
         self.mensaje = texto
         self.tiempo_mensaje = pygame.time.get_ticks()
@@ -850,13 +865,14 @@ class JuegoPygame:
             self.mensaje_color = color
         else:
             self.mensaje_color = COLOR_TEXTO
+    '''
 
     def dibujar_mensajes(self):
         centro_x = self.ancho_pantalla // 2
         
         script_dir = os.path.dirname(os.path.abspath(__file__))
         ruta_fuente = os.path.join(script_dir, "fonts", archivofuente)
-        titulo = self.fuente_grande.render("Dominó de equivalencias", True, (255, 255, 200))
+        titulo = self.fuente_grande.render("Dominó de equivalencias", True, COLOR_TITULO)
         #fuente_titulo = pygame.font.Font(ruta_fuente, int(48 * self.escala))
         #titulo = fuente_titulo.render("Dominó de equivalencias", True, (255, 255, 200))
         y_titulo = int(150 * self.escala)
@@ -865,7 +881,18 @@ class JuegoPygame:
         alto_t = titulo.get_height()
         self.pantalla.blit(titulo, (centro_x - ancho_t//2, y_titulo - alto_t//2))
         
-        if self.partida.terminada:
+        # --- NUEVO: Verificar si hay mensaje temporal ---
+        hay_mensaje_temporal = False
+        if self.mensaje and (pygame.time.get_ticks() - self.tiempo_mensaje < 1500):
+            hay_mensaje_temporal = True
+        elif self.mensaje:
+            # Pasaron más de 2 segundos, borrar el mensaje
+            self.mensaje = ""
+
+        if hay_mensaje_temporal:
+            texto = self.mensaje
+            color = self.mensaje_color
+        elif self.partida.terminada:
             if self.partida.ganador:
                 if self.partida.ganador == self.partida.jugadores[0]:
                     color = COLOR_JUGADOR1
@@ -1026,11 +1053,11 @@ class JuegoPygame:
                         (x_cartel + ancho_cartel - int(20 * self.escala), y_texto), 1)
         y_texto += int(20 * self.escala)
         
-        desarrollador = self.fuente.render("Desarrollado por: Ernesto López", True, (255, 255, 200))
+        desarrollador = self.fuente.render("Desarrollado por: Ernesto López", True, COLOR_TITULO)
         self.pantalla.blit(desarrollador, (self.ancho_pantalla // 2 - desarrollador.get_width() // 2, y_texto))
         y_texto += int(35 * self.escala)
         
-        linea_extra = self.fuente.render("Escuelas en Foco, Ciudad de Buenos Aires", True, (255, 255, 200))
+        linea_extra = self.fuente.render("Escuelas en Foco, Ciudad de Buenos Aires", True, COLOR_TITULO)
         self.pantalla.blit(linea_extra, (self.ancho_pantalla // 2 - linea_extra.get_width() // 2, y_texto))
         
         cerrar = self.fuente.render("Presioná cualquier tecla para cerrar", True, (150, 150, 150))
@@ -1384,9 +1411,20 @@ class JuegoPygame:
         
         posible, _ = self.partida.tablero.puede_colocar(self.ficha_arrastrada, casilla)
         if not posible:
-            self.mostrar_mensaje("❌ La ficha no encaja en ese extremo")
+            self.mostrar_mensaje("La ficha no encaja",visible=True)
             if self.sonido_error:
                 self.sonido_error.play()
+
+            # Si la nueva regla está activa, pasar turno
+            if self.cambio_regla_error:
+                self.partida.cambiar_turno()
+                self.ficha_seleccionada = None
+                self.ficha_arrastrada = None
+                self.ficha_robada_actual = None
+                self.casillas_destacadas = []
+                self.actualizar_posiciones_fichas()
+                self.actualizar_botones()
+                self.verificar_y_mostrar_fin_partida()
             return
         
         exito = self.partida.jugar_ficha(self.ficha_arrastrada, casilla)
