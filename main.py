@@ -257,8 +257,8 @@ class JuegoPygame:
             # Cargar imágenes sin escalar (tamaño original)
             self.img_frente_original = pygame.image.load(os.path.join(assets_dir, "ficha.png"))
             self.img_frente_v_original = pygame.image.load(os.path.join(assets_dir, "ficha_v.png"))
-            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso5.png"))
-            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso5_v.png"))
+            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso4.png"))
+            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso4_v.png"))
             self.img_eef = pygame.image.load(os.path.join(assets_dir, "EEF.png"))
             self.img_baa = pygame.image.load(os.path.join(assets_dir, "BAA.png"))
 
@@ -1011,40 +1011,46 @@ class JuegoPygame:
         pygame.draw.rect(self.pantalla, (150, 150, 150), (x_cartel, y_cartel, ancho_cartel, alto_cartel), 2, border_radius=10)
         
         titulo = self.fuente_grande.render("Instrucciones", True, (255, 255, 255))
-        self.pantalla.blit(titulo, (self.ancho_pantalla // 2 - titulo.get_width() // 2, y_cartel + int(20 * self.escala)))
+        self.pantalla.blit(titulo, (self.ancho_pantalla // 2 - titulo.get_width() // 2, y_cartel + int(5 * self.escala)))
         
         pygame.draw.line(self.pantalla, (150, 150, 150), 
-                        (x_cartel + int(20 * self.escala), y_cartel + int(65 * self.escala)),
-                        (x_cartel + ancho_cartel - int(20 * self.escala), y_cartel + int(65 * self.escala)), 1)
+                        (x_cartel + int(20 * self.escala), y_cartel + int(50 * self.escala)),
+                        (x_cartel + ancho_cartel - int(20 * self.escala), y_cartel + int(50 * self.escala)), 1)
         
-        fuente_instrucciones = pygame.font.Font(self.ruta_fuente, int(24 * self.escala))
+        fuente_instrucciones = pygame.font.Font(self.ruta_fuente, int(22 * self.escala))
     
  
 
 #Gana el jugador que se quede sin fichas primero. Si un jugador no puede colocar y el pozo está vacío, pierde.
 
         instrucciones = [
-            "1. Cada jugador recibe 6 fichas.",
+            "1. Cada jugador recibe 6 fichas. Comienza el jugador que tenga la mayor ficha con dos",
+            "expresiones equivalentes.",
             "",
-            "2. Comienza el jugador que tenga la mayor ficha con dos expresiones equivalentes.",
+            "2. En su turno, cada jugador debe colocar una ficha que tenga un número equivalente al",
+            "que aparece en alguno de los extremos de la cadena. Podés girar una ficha haciendo clic",
+            "sobre ella o con la tecla G.",
             "",
-            "3. En su turno, cada jugador debe colocar una ficha que tenga un número.",
-            "equivalente al que aparece en alguno de los extremos de la cadena.",
-            "Podés girar una ficha haciendo clic sobre ella o con la tecla G.",
+            "3. Si no podés ubicar ninguna ficha, debés robar una ficha del pozo (botón celeste). Si la",
+            "ficha robada sirve, podés colocarla. Si no sirve, tenés que pasar el turno (botón verde).",
             "",
-            "4. Si no podés ubicar ninguna ficha, debés robar una ficha del pozo (botón celeste).",
-            "Si la ficha robada sirve, podés colocarla inmediatamente.",
-            "Si no sirve, tenés que pasar el turno al siguiente jugador (botón verde).",
+            "4. Final del juego: gana el jugador que se quede sin fichas primero. Si un jugador no puede",
+            "colocar y el pozo está vacío, pierde.",
             "",
-            "5. Final del juego: gana el jugador que se quede sin fichas primero.",
-            "Si un jugador no puede colocar y el pozo está vacío, pierde."
+            "¡Atención! Si jugás una ficha que no encaja, perdés tu turno."
         ]
 
-        y_texto = y_cartel + int(85 * self.escala)
+        creditos = [
+            "Territorio de Juegos - Escuelas en Foco Matemática",
+            "Coordinación general: Gloria Rodríguez",
+            "Diseño y desarrollo: Andrea Pallai y Ernesto López"
+        ]
+
+        y_texto = y_cartel + int(70 * self.escala)
         for linea in instrucciones:
             texto = fuente_instrucciones.render(linea, True, (220, 220, 220))
             self.pantalla.blit(texto, (x_cartel + int(25 * self.escala), y_texto))
-            y_texto += int(28 * self.escala)
+            y_texto += int(25 * self.escala)
         
         # Separador y desarrollador
         y_texto += int(10 * self.escala)
@@ -1053,15 +1059,13 @@ class JuegoPygame:
                         (x_cartel + ancho_cartel - int(20 * self.escala), y_texto), 1)
         y_texto += int(20 * self.escala)
         
-        desarrollador = self.fuente.render("Desarrollado por: Ernesto López", True, COLOR_TITULO)
-        self.pantalla.blit(desarrollador, (self.ancho_pantalla // 2 - desarrollador.get_width() // 2, y_texto))
-        y_texto += int(35 * self.escala)
-        
-        linea_extra = self.fuente.render("Escuelas en Foco, Ciudad de Buenos Aires", True, COLOR_TITULO)
-        self.pantalla.blit(linea_extra, (self.ancho_pantalla // 2 - linea_extra.get_width() // 2, y_texto))
-        
+        for linea in creditos:
+            L = self.fuente.render(linea, True, COLOR_TITULO)
+            self.pantalla.blit(L, (self.ancho_pantalla // 2 - L.get_width() // 2, y_texto))
+            y_texto += int(28 * self.escala)
+
         cerrar = self.fuente.render("Presioná cualquier tecla para cerrar", True, (150, 150, 150))
-        self.pantalla.blit(cerrar, (self.ancho_pantalla // 2 - cerrar.get_width() // 2, y_cartel + alto_cartel - int(25 * self.escala)))
+        self.pantalla.blit(cerrar, (self.ancho_pantalla // 2 - cerrar.get_width() // 2, y_cartel + alto_cartel - int(35 * self.escala)))
 
     async def ejecutar(self):
         juego_activo = True
