@@ -139,7 +139,7 @@ class JuegoPygame:
         self.volver_a_input = False
         self.mostrar_confirmacion_salir = False
 
-        self.cambio_regla_error = False  # True: pasa turno si no encaja | False: comportamiento viejo
+        self.cambio_regla_error = True  # True: pasa turno si no encaja | False: comportamiento viejo
 
         
     def dibujar_input_nombres(self):
@@ -257,8 +257,8 @@ class JuegoPygame:
             # Cargar imágenes sin escalar (tamaño original)
             self.img_frente_original = pygame.image.load(os.path.join(assets_dir, "ficha.png"))
             self.img_frente_v_original = pygame.image.load(os.path.join(assets_dir, "ficha_v.png"))
-            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso4.png"))
-            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso4_v.png"))
+            self.img_dorso_original = pygame.image.load(os.path.join(assets_dir, "dorso12.png"))
+            self.img_dorso_v_original = pygame.image.load(os.path.join(assets_dir, "dorso12_v.png"))
             self.img_eef = pygame.image.load(os.path.join(assets_dir, "EEF.png"))
             self.img_baa = pygame.image.load(os.path.join(assets_dir, "BAA.png"))
 
@@ -646,8 +646,8 @@ class JuegoPygame:
 
             self.pantalla.blit(img, (x + dx, y + dy))
             
-            pygame.draw.rect(self.pantalla, (200, 255, 200), (x + dx, y + dy, ancho, alto), 
-                           max(2, int(4 * self.escala)), border_radius=5)
+            #pygame.draw.rect(self.pantalla, (200, 255, 200), (x + dx, y + dy, ancho, alto), 
+            #               max(2, int(4 * self.escala)), border_radius=5)
             
             self.dibujar_valores_ficha(ficha, x + dx, y + dy, ancho, alto, factor=factor)
             return
